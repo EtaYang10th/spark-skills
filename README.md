@@ -1,4 +1,6 @@
-# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation 
+# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation
+
+<img src="figure/SPARK.png" alt="SPARK overview" width="800"/>
 
 SPARK is a research prototype for autonomous runnable task construction and transferable skill generation.
 
@@ -6,6 +8,34 @@ It is built around two decoupled pipelines:
 
 - `spark_tasks_gen`: turns prompt-level task ideas into runnable, oracle-validated Harbor tasks
 - `spark_skills_gen`: distills reusable procedural knowledge from validated interaction trajectories into `SKILL.md`
+
+## Demo
+
+<img src="figure/spark_demo.gif" alt="SPARK skill-generation demo" width="800"/>
+
+## Overview
+
+- Task pipeline: `prompt -> TaskBlueprint -> critique/repair -> Harbor task -> oracle validation`
+- Skill pipeline: `execute -> judge -> reflect memo -> retry -> distill skill`
+
+## Getting Tasks from SkillsBench 🙏
+
+If you want the original `tasks/` and `tasks-no-skills/` folders, the easiest option is to fetch them from [SkillsBench](https://github.com/benchflow-ai/skillsbench), introduced in the paper [*SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks*](https://arxiv.org/abs/2602.12670).
+
+```bash
+git clone --filter=blob:none --no-checkout https://github.com/benchflow-ai/skillsbench.git
+cd skillsbench
+git sparse-checkout init --cone
+git sparse-checkout set tasks tasks-no-skills
+git checkout main
+```
+
+Then copy the folders into your local SPARK workspace as needed:
+
+```bash
+cp -r skillsbench/tasks /path/to/SPARK/
+cp -r skillsbench/tasks-no-skills /path/to/SPARK/
+```
 
 ## Pipeline 1: Runnable Task Construction
 
@@ -43,6 +73,8 @@ A stronger teacher model explores each task inside a Docker/Harbor sandbox over 
 5. save trajectories and final skill artifacts for later transfer
 
 The exploration memo is the compact state carried across retries. It summarizes attempts, key commands, verified facts, the current error pattern, and the next strategy. In the paper's framing, posterior experience gathered during exploration is distilled into a reusable prior for downstream student models.
+
+<img src="figure/skills_gen_pipeline.png" alt="SPARK skill-generation pipeline" width="700"/>
 
 The current implementation also includes optional PDI-guided retry intervention.
 
