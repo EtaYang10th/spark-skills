@@ -1,0 +1,18 @@
+{
+  "output_tokens": {
+    "reflect": 16384,
+    "skill_generation": 32768
+  },
+  "input_chars": {
+    "instruction": 32768,
+    "exploration_memo": 12000,
+    "agent_commands": 16000,
+    "test_summary": 16384,
+    "agent_stdout_for_skill": 32000,
+    "environment_info": 12000
+  },
+  "judge_chars": {
+    "agent_stdout_read": 16000,
+    "test_stdout_read": 12000
+  }
+}

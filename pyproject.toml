@@ -1,0 +1,68 @@
+[project]
+name = "SPARK"
+version = "0.1.0"
+description = "Skill Planning And Retrieval for agent sKills"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "harbor @ git+https://github.com/laude-institute/harbor.git",
+    "litellm>=1.80.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "claude-agent-sdk==0.1.48",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 144
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+    "RUF",    # ruff-specific rules
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "E722",   # bare except (common in scripts)
+    "B008",   # function call in default argument
+    "B905",   # zip without strict
+    "UP038",  # isinstance with tuple (use X | Y in 3.10+)
+]
+
+[tool.uv]
+exclude-newer = "2026-03-18T23:59:59Z"
+
+[tool.ruff.lint.isort]
+known-first-party = ["spark_skills_gen", "spark_tasks_gen"]
+force-single-line = false
+combine-as-imports = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+docstring-code-format = true
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
+
+[tool.uv.sources]
+skills-ref = { git = "https://github.com/agentskills/agentskills.git", subdirectory = "skills-ref", rev = "main" }
+
+[dependency-groups]
+dev = [
+    "mypy>=1.13.0",
+    "pre-commit>=4.0.0",
+    "ruff>=0.8.0",
+    "skills-ref>=0.1.0",
+]

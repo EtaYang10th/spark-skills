@@ -1,0 +1,20 @@
+{
+  "task_name_hint": "3d-scan-calc",
+  "prompt": "You need to calculate the mass of a 3D printed part. The input is a binary STL file, and the 2-byte Attribute Byte Count field stores the Material ID.\n\nRequirements:\n1. Parse the binary STL and identify the largest connected component by filtering out scanning debris.\n2. Extract the Material ID and look up the density from a material table.\n3. Compute the mass and save the result to `/root/mass_report.json` as JSON with keys `main_part_mass` and `material_id`.\n4. The result should be accepted within 0.1% relative error.",
+  "available_tools": [
+    "python3",
+    "pytest",
+    "docker/harbor task environment"
+  ],
+  "environment_hints": [
+    "The generated artifact must be a runnable Harbor task.",
+    "If an input asset is not provided directly, synthesize it deterministically during environment build.",
+    "No human intervention is allowed after generation starts."
+  ],
+  "constraints": [
+    "The generated task should be functionally equivalent to the prompt, even if the concrete STL asset differs from the original benchmark task.",
+    "The instruction, oracle, and verifier must agree on the same output path and JSON schema.",
+    "Avoid hidden defaults or meaningless fallback behavior.",
+    "The generated task must include an oracle that passes Harbor verification."
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "prompt": "Analyze hourly temperature readings from multiple weather stations. The input is a CSV file at /root/weather_readings.csv with columns: timestamp, station_id, temperature_celsius. Detect anomalous readings where the temperature deviates by more than 3 standard deviations from that station's overall mean. Produce a JSON report at /root/weather_report.json with keys: station_count (number of unique stations), total_readings (total number of rows), anomaly_count (number of anomalous readings), anomalies (a list of objects each with station_id, timestamp, temperature, station_mean, station_std). The anomalies list must be sorted by timestamp.",
+  "task_name_hint": "weather-anomaly-detection",
+  "available_tools": ["python3"],
+  "environment_hints": ["Harbor task environment", "No internet access"],
+  "constraints": [
+    "Input data must be deterministically generated during build",
+    "The anomaly detection logic must handle multiple stations independently",
+    "JSON output must match the specified schema exactly"
+  ]
+}

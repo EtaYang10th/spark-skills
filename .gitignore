@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.eggs/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtualenv & secrets
+# .venv/
+.env
+.env.local
+.env.openai_compatible.local
+
+# IDE / OS
+.DS_Store
+.idea/
+
+# Project: datasets, staging, Harbor jobs (may be symlink e.g. to /var/tmp)
+save/
+tasks/
+tasks-no-skills/
+tasks_no_skills_generate/
+spark-jobs
+
+# Skill generation / evaluation outputs (root defaults + spark_skills_gen defaults)
+spark_skills_gen/skills_gen_result/
+spark_skills_gen/skills_eval_result/
+spark_skills_gen/skills_eval_result_pdi/
+spark_skills_gen/skills_gen_result_openai_compatible/
+spark_skills_gen/skills_eval_result_openai_compatible/
+spark-jobs-openai-compatible/
+save/.spark-skill-eval-openai-compatible/
+
+# Task generation pipeline output (run_tasks_gen.py --output-root)
+spark_tasks_gen/generated_tasks/
+
+analysis_output/
+
+# Heavy media only (README uses figure/*.png, *.gif)
+figure/*.mp4
+
+# Ad-hoc logs
+*.log
+
+# Local one-off wrappers for internal compatible endpoints
+run_pipeline_openai_compatible.local.py
+scripts/run_skills_gen_openai_compatible.local.sh
+scripts/run_eval_skills_openai_compatible.local.sh
+scripts/run_skills_gen_pdi_observe_only.local.sh

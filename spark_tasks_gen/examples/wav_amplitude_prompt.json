@@ -1,0 +1,11 @@
+{
+  "prompt": "Parse a binary WAV audio file located at /root/audio_sample.wav. Split the audio into 1-second segments and compute the RMS (Root Mean Square) amplitude of each segment. Identify the segment with the highest RMS amplitude. Save the analysis to /root/amplitude_report.json with keys: sample_rate (integer), num_channels (integer), total_duration_sec (float), total_segments (integer), segments (list of objects with segment_index, start_sec, end_sec, rms_amplitude), loudest_segment_index (integer, 0-based index of the loudest segment). The result will be considered correct if RMS values are within 0.01% relative tolerance.",
+  "task_name_hint": "wav-amplitude-analysis",
+  "available_tools": ["python3"],
+  "environment_hints": ["Harbor task environment", "No internet access"],
+  "constraints": [
+    "Parse WAV binary format directly without relying on external audio libraries beyond the standard library",
+    "RMS values should be floating-point",
+    "The verifier should accept results within 0.01% relative tolerance"
+  ]
+}
