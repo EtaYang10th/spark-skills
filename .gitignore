@@ -51,6 +51,9 @@ figure/*.mp4
 # Ad-hoc logs
 *.log
 
+pdi_rerun_tasks.txt
+spark_skills_gen/task_blacklist.txt
+
 # Local one-off wrappers for internal compatible endpoints
 run_pipeline_openai_compatible.local.py
 scripts/run_skills_gen_openai_compatible.local.sh
