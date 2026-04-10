@@ -1,4 +1,4 @@
-# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation
+# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation [Public]
 
 <img src="figure/SPARK.png" alt="SPARK overview" width="800"/>
 
