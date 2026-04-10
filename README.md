@@ -1,4 +1,4 @@
-# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation (pub)
+# SPARK: Self-evolving Pipelines for Autonomous Runnable Tasks and Skill Generation 
 
 SPARK is a research prototype for autonomous runnable task construction and transferable skill generation.
 
