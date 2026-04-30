@@ -33,6 +33,8 @@ spark-jobs
 
 # Skill generation / evaluation outputs (root defaults + spark_skills_gen defaults)
 spark_skills_gen/skills_gen_result/
+!spark_skills_gen/skills_gen_result/all_model/
+!spark_skills_gen/skills_gen_result/all_model_pdi/
 spark_skills_gen/skills_eval_result/
 spark_skills_gen/skills_eval_result_pdi/
 spark_skills_gen/skills_gen_result_openai_compatible/
