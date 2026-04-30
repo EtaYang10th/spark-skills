@@ -1,0 +1,118 @@
+{
+  "model": "gpt-5.4",
+  "agent": "codex",
+  "max_retries": 5,
+  "total_tasks": 15,
+  "passed": 5,
+  "failed": 8,
+  "infra_error": 0,
+  "tasks": {
+    "econ-detrending-correlation": {
+      "task": "econ-detrending-correlation",
+      "success": true,
+      "attempts": 1,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "software-dependency-audit": {
+      "task": "software-dependency-audit",
+      "success": true,
+      "attempts": 1,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "pddl-tpp-planning": {
+      "task": "pddl-tpp-planning",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "threejs-structure-parser": {
+      "task": "threejs-structure-parser",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "mario-coin-counting": {
+      "task": "mario-coin-counting",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "energy-market-pricing": {
+      "task": "energy-market-pricing",
+      "success": true,
+      "attempts": 1,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "sec-financial-report": {
+      "task": "sec-financial-report",
+      "success": true,
+      "attempts": 5,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "travel-planning": {
+      "task": "travel-planning",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "dynamic-object-aware-egomotion": {
+      "task": "dynamic-object-aware-egomotion",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "pptx-reference-formatting": {
+      "task": "pptx-reference-formatting",
+      "success": true,
+      "attempts": 1,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "civ6-adjacency-optimizer": {
+      "task": "civ6-adjacency-optimizer",
+      "success": false,
+      "attempts": 5,
+      "final_status": "PARTIAL",
+      "final_reward": 0.8
+    },
+    "shock-analysis-supply": {
+      "task": "shock-analysis-supply",
+      "success": false,
+      "attempts": 5,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "taxonomy-tree-merge": {
+      "task": "taxonomy-tree-merge",
+      "success": false,
+      "attempts": 5,
+      "final_status": "PARTIAL",
+      "final_reward": 0.85
+    },
+    "mhc-layer-impl": {
+      "task": "mhc-layer-impl",
+      "success": false,
+      "skipped": true,
+      "attempts": 4,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    },
+    "quantum-numerical-simulation": {
+      "task": "quantum-numerical-simulation",
+      "success": false,
+      "skipped": true,
+      "attempts": 4,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    }
+  }
+}

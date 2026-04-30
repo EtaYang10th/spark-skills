@@ -1,0 +1,121 @@
+{
+  "model": "gpt-5.4",
+  "agent": "codex",
+  "max_retries": 12,
+  "total_tasks": 15,
+  "passed": 3,
+  "failed": 5,
+  "infra_error": 2,
+  "tasks": {
+    "fix-druid-loophole-cve": {
+      "task": "fix-druid-loophole-cve",
+      "success": true,
+      "attempts": 4,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "grid-dispatch-operator": {
+      "task": "grid-dispatch-operator",
+      "success": true,
+      "attempts": 1,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "3d-scan-calc": {
+      "task": "3d-scan-calc",
+      "success": true,
+      "attempts": 9,
+      "final_status": "PASS",
+      "final_reward": 1.0
+    },
+    "manufacturing-codebook-normalization": {
+      "task": "manufacturing-codebook-normalization",
+      "success": false,
+      "attempts": 12,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "gravitational-wave-detection": {
+      "task": "gravitational-wave-detection",
+      "success": false,
+      "skipped": true,
+      "attempts": 3,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    },
+    "manufacturing-equipment-maintenance": {
+      "task": "manufacturing-equipment-maintenance",
+      "success": false,
+      "attempts": 9,
+      "final_status": "INFRA_ERROR",
+      "final_reward": 0.0
+    },
+    "sec-financial-report": {
+      "task": "sec-financial-report",
+      "success": false,
+      "skipped": true,
+      "attempts": 10,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    },
+    "data-to-d3": {
+      "task": "data-to-d3",
+      "success": false,
+      "attempts": 7,
+      "final_status": "INFRA_ERROR",
+      "final_reward": 0.0
+    },
+    "r2r-mpc-control": {
+      "task": "r2r-mpc-control",
+      "success": false,
+      "attempts": 12,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "spring-boot-jakarta-migration": {
+      "task": "spring-boot-jakarta-migration",
+      "success": false,
+      "attempts": 12,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "syzkaller-ppdev-syzlang": {
+      "task": "syzkaller-ppdev-syzlang",
+      "success": false,
+      "attempts": 12,
+      "final_status": "ERROR",
+      "final_reward": 0.0
+    },
+    "paper-anonymizer": {
+      "task": "paper-anonymizer",
+      "success": false,
+      "attempts": 12,
+      "final_status": "FAIL",
+      "final_reward": 0.0
+    },
+    "sales-pivot-analysis": {
+      "task": "sales-pivot-analysis",
+      "success": false,
+      "skipped": true,
+      "attempts": 2,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    },
+    "financial-modeling-qa": {
+      "task": "financial-modeling-qa",
+      "success": false,
+      "skipped": true,
+      "attempts": 1,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    },
+    "flink-query": {
+      "task": "flink-query",
+      "success": false,
+      "skipped": true,
+      "attempts": 0,
+      "final_status": "SKIPPED",
+      "final_reward": 0.0
+    }
+  }
+}

@@ -1,0 +1,1 @@
+{"type": "task_summary", "task_name": "flink-query", "success": false, "total_attempts": 0, "reward_trajectory": [], "status_trajectory": [], "total_time_s": 6.32, "total_input_tokens": 0, "total_output_tokens": 0, "exploration_config": {"model": "gpt-5.4", "agent": "codex", "summary_model": "gpt-5.4", "max_retries": 12}, "ts": 1775634436.0349681}

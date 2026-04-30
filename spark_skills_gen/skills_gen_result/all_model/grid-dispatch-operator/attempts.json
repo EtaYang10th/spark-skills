@@ -1,0 +1,17 @@
+{
+  "task_name": "grid-dispatch-operator",
+  "max_retries": 7,
+  "exploration_memo": "",
+  "memo_history": [],
+  "attempts": [
+    {
+      "attempt": 0,
+      "status": "PASS",
+      "reward": 1.0,
+      "agent_commands": "top3_idx = np.argsort(loading)[-3:][::-1]\nmost_loaded = []\nfor idx in top3_idx:\n    _, br = active_br[idx]\n    most_loaded.append({\n        \\\"from\\\": int(br[0]),\n        \\\"to\\\":   int(br[1]),\n        \\\"loading_pct\\\": round(float(loading[idx]), 4)\n    })\n\n# Generator dispatch\ntotal_cost = float(np.dot(cost_c1, p_opt))\ntotal_gen  = float(p_opt.sum())\ntotal_res  = float(r_opt.sum())\ntotal_load = float(sum(b[2] for b in buses_raw))\n\n# Operating margin: uncommitted capacity beyond energy and reserves\n# For each gen: margin_g = pmax_g - p_g - r_g\nmargin_per_gen = pmax - p_opt - r_opt\noperating_margin = float(np.sum(np.maximum(margin_per_gen, 0.0)))\n\ngen_dispatch = []\nfor g in range(len(active_gens)):\n    gen_dispatch.append({\n        \\\"id\\\":        orig_idx[g] + 1,   # 1-indexed\n        \\\"bus\\\":       gen_bus_id[g],\n        \\\"output_MW\\\": round(float(p_opt[g]), 4),\n        \\\"reserve_MW\\\": round(float(r_opt[g]), 4),\n        \\\"pmax_MW\\\":   round(float(pmax[g]), 4)\n    })\n\nreport = {\n    \\\"generator_dispatch\\\": gen_dispatch,\n    \\\"totals\\\": {\n        \\\"cost_dollars_per_hour\\\": round(total_cost, 2),\n        \\\"load_MW\\\":               round(total_load, 4),\n        \\\"generation_MW\\\":         round(total_gen, 4),\n        \\\"reserve_MW\\\":            round(total_res, 4)\n    },\n    \\\"most_loaded_lines\\\": most_loaded,\n    \\\"operating_margin_MW\\\": round(operating_margin, 4)\n}\n\nwith open('/root/report.json', 'w') as f:\n    json.dump(report, f, indent=2)\n\nprint(\\\"=== REPORT SUMMARY ===\\\")\nprint(f\\\"Total cost:       \"'${total_cost:,.2f}/hr\")\nprint(f\"Total load:       {total_load:.2f} MW\")\nprint(f\"Total generation: {total_gen:.2f} MW\")\nprint(f\"Total reserve:    {total_res:.2f} MW (req: {reserve_req:.2f} MW)\")\nprint(f\"Operating margin: {operating_margin:.2f} MW\")\nprint(f\"'\"\\\\nTop 3 most loaded lines:\\\")\nfor line in most_loaded:\n    print(f\\\"  {line['from']} -> {line['to']}: {line['loading_pct']:.2f}%\\\")\nprint(f\\\"\\\\nreport.json written with {len(gen_dispatch)} generators.\\\")\nEOF\"",
+      "test_summary": "PASSED (do NOT change logic for these):\n  ✓ ../tests/test_outputs.py::TestSchema::test_report_schema\n  ✓ ../tests/test_outputs.py::TestFeasibility::test_power_balance\n  ✓ ../tests/test_outputs.py::TestFeasibility::test_generator_bounds\n  ✓ ../tests/test_outputs.py::TestFeasibility::test_reserve_constraints\n  ✓ ../tests/test_outputs.py::TestFeasibility::test_internal_consistency\n  ✓ ../tests/test_outputs.py::TestOptimality::test_cost_is_optimal",
+      "n_passed": 6,
+      "n_tests": 6
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "task_name": "pdf-excel-diff",
+  "max_retries": 7,
+  "exploration_memo": "",
+  "memo_history": [],
+  "attempts": [
+    {
+      "attempt": 0,
+      "status": "PASS",
+      "reward": 1.0,
+      "agent_commands": "\n# Extract Excel employees\nwb = openpyxl.load_workbook(\\\"/root/employees_current.xlsx\\\")\nws = wb.active\nxlsx_employees = {}\nxlsx_headers = None\nfor i, row in enumerate(ws.iter_rows(values_only=True)):\n    if i == 0:\n        xlsx_headers = [str(h).strip() for h in row]\n        continue\n    if row and row[0] and str(row[0]).startswith(\\\"EMP\\\"):\n        emp = {}\n        for j, h in enumerate(xlsx_headers):\n            v = row[j]\n            if h in NUMERIC_FIELDS:\n                if isinstance(v, (int, float)):\n                    f = float(v)\n                    emp[h] = int(f) if f == int(f) else f\n                else:\n                    emp[h] = parse_value(h, str(v) if v is not None else \\\"\\\")\n            else:\n                emp[h] = str(v).strip() if v is not None else \\\"\\\"\n        xlsx_employees[emp[\\\"ID\\\"]] = emp\n\nprint(f\\\"Excel employees: {len(xlsx_employees)}\\\")\n\n# Deleted: in PDF but not in Excel\ndeleted = sorted([eid for eid in pdf_employees if eid not in xlsx_employees])\n\n# Modified: in both but values differ\ncompare_fields = ['First', 'Last', 'Dept', 'Position', 'Salary', 'Years', 'Location', 'Score']\nmodified = []\nfor eid in sorted(pdf_employees):\n    if eid not in xlsx_employees:\n        continue\n    old = pdf_employees[eid]\n    new = xlsx_employees[eid]\n    for field in compare_fields:\n        old_val = old.get(field)\n        new_val = new.get(field)\n        if old_val \"'!= new_val:\n            modified.append({\"id\": eid, \"field\": field, \"old_value\": old_val, \"new_value\": new_val})\n\nresult = {\"deleted_employees\": deleted, \"modified_employees\": modified}\n\nprint(f\"'\"\\\\nDeleted ({len(deleted)}): {deleted[:10]}{'...' if len(deleted)>10 else ''}\\\")\nprint(f\\\"Modified ({len(modified)}):\\\")\nfor m in modified[:20]:\n    print(f\\\"  {m['id']} | {m['field']}: {m['old_value']\"'!r} -> {m['\"'new_value']\"'!r}\")\n\nwith open(\"/root/diff_report.json\", \"w\") as f:\n    json.dump(result, f, indent=2)\nprint(\"'\"\\\\nSaved to /root/diff_report.json\\\")\nEOF\n\"",
+      "test_summary": "PASSED (do NOT change logic for these):\n  ✓ ../tests/test_outputs.py::TestFileExists::test_output_file_exists\n  ✓ ../tests/test_outputs.py::TestFileExists::test_output_file_valid_json\n  ✓ ../tests/test_outputs.py::TestFileExists::test_output_has_required_keys\n  ✓ ../tests/test_outputs.py::TestDeletedEmployees::test_correct_deleted_count\n  ✓ ../tests/test_outputs.py::TestDeletedEmployees::test_correct_deleted_ids\n  ✓ ../tests/test_outputs.py::TestModifiedEmployees::test_correct_modified_count\n  ✓ ../tests/test_outputs.py::TestModifiedEmployees::test_modified_employee_structure\n  ✓ ../tests/test_outputs.py::TestModifiedEmployees::test_correct_modified_ids\n  ✓ ../tests/test_outputs.py::TestModifiedEmployees::test_correct_modified_fields\n  ✓ ../tests/test_outputs.py::TestModifiedEmployees::test_correct_modified_values\n  ✓ ../tests/test_outputs.py::TestIntegration::test_full_comparison",
+      "n_passed": 11,
+      "n_tests": 11
+    }
+  ]
+}

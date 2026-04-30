@@ -1,0 +1,17 @@
+{
+  "task_name": "3d-scan-calc",
+  "max_retries": 7,
+  "exploration_memo": "",
+  "memo_history": [],
+  "attempts": [
+    {
+      "attempt": 0,
+      "status": "PASS",
+      "reward": 1.0,
+      "agent_commands": "for root, tris in sorted(comp_tris.items(), key=lambda x: -len(x[1])):\n    mat_ids = Counter(material_ids[t] for t in tris)\n    print(f\\\"  Component root={root}: {len(tris)} triangles, material_ids={dict(mat_ids)}\\\")\n\n# Find largest component\nlargest_root = max(comp_tris.keys(), key=lambda r: len(comp_tris[r]))\nlargest_tris = comp_tris[largest_root]\nprint(f\\\"\\\\nLargest component: {len(largest_tris)} triangles\\\")\n\n# Get material ID of largest component (most common non-zero)\nmat_counter = Counter(material_ids[t] for t in largest_tris)\nprint(f\\\"Material IDs in largest component: {dict(mat_counter)}\\\")\n\n# Determine dominant material ID (exclude 0 if possible)\ndominant_mat = mat_counter.most_common(1)[0][0]\nprint(f\\\"Dominant material ID: {dominant_mat}\\\")\n\n# Calculate signed volume using divergence theorem\n# V = (1/6) * sum over triangles of (v1 . (v2 x v3))\ndef signed_volume_contribution(v1, v2, v3):\n    # Signed volume of tetrahedron from origin to triangle\n    return (v1[0] * (v2[1]*v3[2] - v2[2]*v3[1]) +\n            v1[1] * (v2[2]*v3[0] - v2[0]*v3[2]) +\n            v1[2] * (v2[0]*v3[1] - v2[1]*v3[0])) / 6.0\n\ntotal_volume = 0.0\nfor t in largest_tris:\n    v1, v2, v3 = triangles[t]\n    total_volume += signed_volume_contribution(v1, v2, v3)\n\nvolume_cm3 = abs(total_volume)\nprint(f\\\"\\\\nVolume of largest component: {volume_cm3:.6f} (units\"'^3)\")\n\n# Density lookup\ndensity_table = {1: 0.10, 10: 7.85, 25: 2.70, 42: 5.55, 99: 11.34}\n\n# Use the material ID from the attribute bytes (dominant in largest component)\nmaterial_id = dominant_mat\ndensity = density_table[material_id]\nmass = volume_cm3 * density\n\nprint(f\"Material ID: {material_id}\")\nprint(f\"Density: {density} g/cm³\")\nprint(f\"Mass: {mass:.6f} g\")\n\n# Write report\nreport = {\n    \"main_part_mass\": round(mass, 2),\n    \"material_id\": material_id\n}\nwith open('\"'/root/mass_report.json', 'w') as f:\n    json.dump(report, f, indent=2)\n\nprint(f\\\"\\\\nReport written: {report}\\\")\nEOF\n\"\ncat /root/mass_report.json",
+      "test_summary": "PASSED (do NOT change logic for these):\n  ✓ ../tests/test_outputs.py::TestOutputs::test_file_exists\n  ✓ ../tests/test_outputs.py::TestOutputs::test_values_correct",
+      "n_passed": 2,
+      "n_tests": 2
+    }
+  ]
+}

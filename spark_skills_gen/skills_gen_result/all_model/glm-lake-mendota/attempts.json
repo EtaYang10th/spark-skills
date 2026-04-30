@@ -1,0 +1,17 @@
+{
+  "task_name": "glm-lake-mendota",
+  "max_retries": 7,
+  "exploration_memo": "",
+  "memo_history": [],
+  "attempts": [
+    {
+      "attempt": 0,
+      "status": "PASS",
+      "reward": 1.0,
+      "agent_commands": "/bin/bash -lc \"cd /root && python3 -c \\\"\nimport re\n\nwith open('glm3.nml') as f:\n    nml = f.read()\n\nnml = re.sub(r'Kw\\\\s*=\\\\s*[\\\\d.]+', 'Kw = 0.35', nml)\nnml = re.sub(r'sw_factor\\\\s*=\\\\s*[\\\\d.]+', 'sw_factor = 0.9', nml)\nnml = re.sub(r'coef_mix_conv\\\\s*=\\\\s*[\\\\d.]+', 'coef_mix_conv = 0.2', nml)\nnml = re.sub(r'coef_wind_stir\\\\s*=\\\\s*[\\\\d.]+', 'coef_wind_stir = 0.3', nml)\n\nwith open('glm3.nml', 'w') as f:\n    f.write(nml)\nprint('Updated glm3.nml')\n\\\"\ngrep -E 'Kw|sw_factor|coef_mix_conv|coef_wind_stir' /root/glm3.nml\"\ncd /root && rm -f output/output.nc && glm && echo \"GLM done\" && ls -lh output/output.nc\n/bin/bash -lc \"python3 << 'EOF'\nimport netCDF4 as nc\nimport numpy as np\nimport pandas as pd\n\nds = nc.Dataset('/root/output/output.nc')\ntimes_raw = np.array(ds.variables['time'][:])\nbase = np.datetime64('2009-01-01T12:00:00')\nsim_times = base + (times_raw * 3600e9).astype('timedelta64[ns]')\nNS = ds.variables['NS'][:].astype(int)\nz_all = np.array(ds.variables['z'][:, :, 0, 0])\ntemp_all = np.array(ds.variables['temp'][:, :, 0, 0])\nds.close()\n\nobs = pd.read_csv('/root/field_temp_oxy.csv', parse_dates=['datetime'])\nobs = obs.dropna(subset=['temp'])\n\nunique_dts = obs['datetime'].unique()\ndt_to_idx = {}\nfor udt in unique_dts:\n    udt64 = np.datetime64(udt)\n    diffs = np.abs((sim_times - udt64).astype(np.int64))\n    dt_to_idx[udt] = int(np.argmin(diffs))\n\nerrors_sq = []\nfor _, row in obs.iterrows():\n    idx = dt_to_idx[row['datetime']]\n    n = NS[idx]\n    if n == 0:\n        continue\n    z_vals = z_all[idx, :n]\n    t_vals = temp_all[idx, :n]\n    surf_elev = z_vals[-1]\n    depths = (surf_elev - z_vals)[::-1]\n    t_asc = t_vals[::-1]\n    sim_t = np.interp(float(row['depth']), depths, t_asc, left=t_asc[0], right=t_asc[-1])\n    errors_sq.append((float(row['temp']) - sim_t)**2)\n\nrmse = np.sqrt(np.mean(errors_sq))\nprint(f\\\"Final RMSE: {rmse:.4f} C  (n={len(errors_sq)})\\\")\nprint(f\\\"Target: < 2.0 C  ->  {'PASS' if rmse < 2.0 else 'FAIL'}\\\")\nEOF\n\"",
+      "test_summary": "PASSED (do NOT change logic for these):\n  ✓ ../tests/test_outputs.py::TestGLMCalibration::test_glm_runs\n  ✓ ../tests/test_outputs.py::TestGLMCalibration::test_output_exists\n  ✓ ../tests/test_outputs.py::TestGLMCalibration::test_rmse_threshold",
+      "n_passed": 0,
+      "n_tests": 0
+    }
+  ]
+}
