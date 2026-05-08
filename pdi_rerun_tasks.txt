@@ -1,0 +1,33 @@
+# SPARK PDI Rerun Task List
+# ========================
+# 20 tasks where generated skills provided NO positive improvement
+# (generated_delta <= 0) across ALL 7 student models.
+#
+# Category A: Zero effect (13 tasks) — all 7 models delta = 0
+# Category B: Harmful (7 tasks) — at least 1 model delta < 0, rest <= 0
+#
+# Format: task_name  |  category  |  mean_delta  |  human_delta  |  note
+
+# ── Category A: Zero effect (delta = 0 for all 7 models) ──────────────
+fix-visual-stability          # A  mean_Δ=0.00   human_Δ=0.00   all skills ineffective
+flink-query                   # A  mean_Δ=0.00   human_Δ=0.00   baseline=0, fully unsolved
+gravitational-wave-detection  # A  mean_Δ=0.00   human_Δ=0.00   baseline=0, fully unsolved
+grid-dispatch-operator        # A  mean_Δ=0.00   human_Δ=-0.14  all skills ineffective
+lean4-proof                   # A  mean_Δ=0.00   human_Δ=-0.29  human skill harmful
+manufacturing-codebook-normalization   # A  mean_Δ=0.00   human_Δ=0.00   baseline=0, fully unsolved
+manufacturing-equipment-maintenance    # A  mean_Δ=0.00   human_Δ=0.00   baseline=0, fully unsolved
+paper-anonymizer              # A  mean_Δ=0.00   human_Δ=0.00   baseline=0, fully unsolved
+sales-pivot-analysis          # A  mean_Δ=0.00   human_Δ=+0.43  human effective, generated not
+sec-financial-report          # A  mean_Δ=0.00   human_Δ=+0.29  human effective, generated not
+software-dependency-audit     # A  mean_Δ=0.00   human_Δ=+0.57  human effective, generated not
+spring-boot-jakarta-migration # A  mean_Δ=0.00   human_Δ=-0.14  baseline already 1.0 (ceiling)
+syzkaller-ppdev-syzlang       # A  mean_Δ=0.00   human_Δ=0.00   infra issue (Docker)
+
+# ── Category B: Harmful (at least 1 model delta < 0, rest <= 0) ──────
+3d-scan-calc                  # B  mean_Δ=-0.43  3 models harmed (deepseek, haiku, glm-air)
+r2r-mpc-control               # B  mean_Δ=-0.29  2 models harmed (mini, deepseek)
+data-to-d3                    # B  mean_Δ=-0.14  1 model harmed (haiku)
+energy-market-pricing         # B  mean_Δ=-0.14  1 model harmed (mini)
+financial-modeling-qa         # B  mean_Δ=-0.14  1 model harmed (mini)
+fix-druid-loophole-cve        # B  mean_Δ=-0.14  1 model harmed (mini)
+react-performance-debugging   # B  mean_Δ=-0.14  1 model harmed (mini)

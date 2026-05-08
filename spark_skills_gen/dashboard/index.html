@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPARK Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface-hover: #232633;
+    --border: #2a2d3a;
+    --text: #e4e5ea;
+    --text-dim: #8b8d97;
+    --accent: #6c8cff;
+    --green: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --blue: #60a5fa;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: var(--font-sans);
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  header h1 span { color: var(--accent); }
+  .header-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    font-family: var(--font-mono);
+  }
+  .stat { display: flex; align-items: center; gap: 5px; }
+  .stat-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    display: inline-block;
+  }
+  .stat-dot.pass { background: var(--green); }
+  .stat-dot.fail { background: var(--red); }
+  .stat-dot.running { background: var(--amber); animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .progress-bar { height: 2px; background: var(--border); flex-shrink: 0; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg,var(--accent),var(--green)); transition: width .5s; }
+
+  main { flex:1; display:flex; overflow:hidden; }
+
+  /* ── Left: task list ── */
+  .task-panel {
+    width: 260px;
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background: var(--surface);
+  }
+  .panel-title {
+    padding: 10px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .task-list { flex:1; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+  .task-item {
+    padding: 8px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background .15s;
+    font-size: 12px;
+  }
+  .task-item:hover { background: var(--surface-hover); }
+  .task-item.selected { background: var(--surface-hover); border-left: 3px solid var(--accent); }
+  .task-icon { width:18px; text-align:center; flex-shrink:0; font-size:13px; }
+  .task-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-family:var(--font-mono); font-size:11px; }
+  .task-badge { font-size:9px; padding:2px 5px; border-radius:3px; font-family:var(--font-mono); font-weight:600; flex-shrink:0; }
+  .task-badge.pass { background:rgba(52,211,153,.15); color:var(--green); }
+  .task-badge.fail { background:rgba(248,113,113,.15); color:var(--red); }
+  .task-badge.running { background:rgba(251,191,36,.15); color:var(--amber); }
+  .task-badge.pending { background:rgba(139,141,151,.15); color:var(--text-dim); }
+  .task-badge.skipped { background:rgba(167,139,250,.15); color:var(--purple); }
+  .stat-dot.skipped { background: var(--purple); }
+
+  .task-cancel-btn {
+    flex-shrink: 0;
+    width: 16px; height: 16px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color .15s, border-color .15s, background .15s;
+    padding: 0;
+    margin-left: 2px;
+  }
+  .task-cancel-btn:hover { color: var(--red); border-color: var(--red); background: rgba(248,113,113,.1); }
+
+  /* ── Confirm dialog ── */
+  .confirm-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.55);
+    z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    min-width: 280px;
+    max-width: 360px;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4);
+  }
+  .confirm-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+  .confirm-msg { font-size: 12px; color: var(--text-dim); margin-bottom: 18px; font-family: var(--font-mono); word-break: break-all; }
+  .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .confirm-btn {
+    padding: 5px 14px; border-radius: 4px; font-size: 12px; font-weight: 600;
+    cursor: pointer; border: 1px solid var(--border); font-family: var(--font-sans);
+    transition: background .15s, color .15s;
+  }
+  .confirm-btn.cancel { background: transparent; color: var(--text-dim); }
+  .confirm-btn.cancel:hover { background: var(--surface-hover); color: var(--text); }
+  .confirm-btn.confirm { background: rgba(248,113,113,.15); color: var(--red); border-color: var(--red); }
+  .confirm-btn.confirm:hover { background: rgba(248,113,113,.3); }
+
+  /* ── Center: attempt timeline ── */
+  .center-panel { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+  .detail-header {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+  }
+  .detail-content { flex:1; overflow-y:auto; padding:16px 20px; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+
+  /* ── Right: live context sidebar ── */
+  .context-wrapper {
+    position: relative;
+    display: flex;
+    flex-shrink: 0;
+  }
+  .context-toggle {
+    position: absolute;
+    left: -14px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 14px;
+    height: 48px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-right: none;
+    border-radius: 6px 0 0 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 10px;
+    transition: color .15s, background .15s;
+  }
+  .context-toggle:hover { color: var(--accent); background: var(--surface-hover); }
+  .context-toggle .chevron { transition: transform .25s; display: inline-block; }
+  .context-wrapper.collapsed .context-toggle .chevron { transform: rotate(180deg); }
+  .context-panel {
+    width: 380px;
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    background: var(--surface);
+    overflow: hidden;
+    transition: width .3s ease, opacity .25s ease;
+  }
+  .context-wrapper.collapsed .context-panel {
+    width: 0;
+    opacity: 0;
+    border-left: none;
+  }
+  .context-section { flex:1; display:flex; flex-direction:column; overflow:hidden; min-height:0; }
+  .context-section + .context-section { border-top: 1px solid var(--border); }
+  .context-body {
+    flex:1;
+    overflow-y:auto;
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-dim);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* ── Attempt card ── */
+  .attempt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .attempt-header {
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .attempt-body {
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text-dim);
+  }
+
+  /* ── Collapsible prompt viewer ── */
+  .prompt-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 3px 8px;
+    margin-top: 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: transparent;
+    font-family: var(--font-mono);
+    transition: color .15s, border-color .15s;
+  }
+  .prompt-toggle:hover { color:var(--cyan); border-color:var(--cyan); }
+  .prompt-toggle .arrow { transition: transform .2s; display:inline-block; }
+  .prompt-toggle.open .arrow { transform: rotate(90deg); }
+
+  .prompt-panel {
+    display: none;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .prompt-panel.open { display:block; }
+  .prompt-label {
+    padding: 3px 10px;
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--cyan);
+    background: rgba(34,211,238,.05);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .prompt-scroll {
+    padding: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    line-height: 1.4;
+    color: var(--text-dim);
+    overflow: auto;
+    max-height: 300px;
+    min-height: 40px;
+    resize: vertical;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    background: rgba(0,0,0,.2);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .prompt-scroll::-webkit-scrollbar { width:5px; height:5px; }
+  .prompt-scroll::-webkit-scrollbar-track { background:transparent; }
+  .prompt-scroll::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+  .prompt-scroll::-webkit-resizer { background:var(--border); }
+
+  /* ── LLM response block ── */
+  .llm-response {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: rgba(108,140,255,.06);
+    border: 1px solid rgba(108,140,255,.2);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .llm-response-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 10px;
+    margin-bottom: 4px;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-dim);
+    font-size: 13px;
+    gap: 6px;
+  }
+  .empty-state .icon { font-size: 36px; opacity: .3; }
+  .ws-status { width:7px; height:7px; border-radius:50%; display:inline-block; }
+
+  .test-line-pass { color: var(--green); }
+  .test-line-fail { color: var(--red); }
+
+  /* ── Staggered pop-in animation ── */
+  @keyframes cardPopIn {
+    0%   { opacity:0; transform:translateY(20px) scale(.96); }
+    60%  { opacity:1; transform:translateY(-4px) scale(1.01); }
+    100% { opacity:1; transform:translateY(0) scale(1); }
+  }
+  .anim-block {
+    opacity: 0;
+    transform: translateY(20px) scale(.96);
+  }
+  .anim-block.visible {
+    animation: cardPopIn .32s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+
+  /* ── PDI chart ── */
+  .pdi-panel {
+    border-top: 1px solid var(--border);
+    padding: 10px 14px;
+    flex-shrink: 0;
+  }
+  .pdi-panel-title {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--purple);
+    margin-bottom: 8px;
+    font-family: var(--font-mono);
+  }
+  .pdi-chart {
+    width: 100%;
+    height: 120px;
+    background: rgba(0,0,0,.2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .pdi-chart canvas { width: 100%; height: 100%; }
+  .pdi-legend {
+    display: flex;
+    gap: 10px;
+    margin-top: 6px;
+    font-size: 9px;
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    flex-wrap: wrap;
+  }
+  .pdi-legend-item { display: flex; align-items: center; gap: 3px; }
+  .pdi-legend-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .pdi-trigger-badge {
+    display: inline-block;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .pdi-trigger-badge.soft { background: rgba(251,191,36,.15); color: var(--amber); }
+  .pdi-trigger-badge.strong { background: rgba(248,113,113,.15); color: var(--red); }
+
+  .pdi-table-inner {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 8px;
+    font-family: var(--font-mono);
+  }
+  .pdi-table-inner th {
+    position: sticky; top: 0;
+    background: var(--surface);
+    color: var(--text-dim);
+    font-weight: 600;
+    text-align: right;
+    padding: 2px 5px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .pdi-table-inner th:first-child { text-align: center; }
+  .pdi-table-inner td {
+    text-align: right;
+    padding: 2px 5px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    white-space: nowrap;
+  }
+  .pdi-table-inner td:first-child { text-align: center; color: var(--text-dim); }
+  .pdi-table-inner tr.pdi-triggered { background: rgba(248,113,113,.06); }
+
+  /* ── Clickable title ── */
+  header h1 { font-size: 16px; font-weight: 700; letter-spacing: 1.5px; cursor: pointer; transition: opacity .15s; }
+  header h1:hover { opacity: .8; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 onclick="goHome()"><span>SPARK</span> Pipeline Monitor</h1>
+  <div class="header-stats">
+    <div class="stat"><span class="stat-dot running" id="ws-dot"></span> <span id="ws-label">Connecting...</span></div>
+    <div class="stat"><span class="stat-dot pass"></span> <span id="stat-pass">0</span></div>
+    <div class="stat"><span class="stat-dot fail"></span> <span id="stat-fail">0</span></div>
+    <div class="stat"><span class="stat-dot running"></span> <span id="stat-running">0</span></div>
+    <div class="stat"><span class="stat-dot skipped"></span> <span id="stat-skipped">0</span></div>
+    <div class="stat">Total: <span id="stat-total">0</span></div>
+  </div>
+</header>
+<div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+
+<main>
+  <!-- Left: task list -->
+  <div class="task-panel">
+    <div class="panel-title">Tasks</div>
+    <div class="task-list" id="task-list"></div>
+  </div>
+
+  <!-- Center: attempt timeline -->
+  <div class="center-panel">
+    <div class="detail-header" id="detail-header">Select a task</div>
+    <div class="detail-content" id="detail-content">
+      <div class="empty-state">
+        <div class="icon">&#9881;</div>
+        <div>Click a task to view details</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: live context -->
+  <div class="context-wrapper" id="context-wrapper">
+    <button class="context-toggle" onclick="toggleContextPanel()" title="Toggle sidebar">
+      <span class="chevron">&#9654;</span>
+    </button>
+    <div class="context-panel">
+      <div class="context-section" style="flex:2">
+        <div class="panel-title" style="color:var(--accent)">&#128209; Exploration Memo</div>
+        <div class="context-body" id="ctx-memo"><span style="color:var(--text-dim);font-style:italic">No memo yet</span></div>
+      </div>
+      <div class="context-section" style="flex:1">
+        <div class="panel-title" style="color:var(--cyan)">&#9654; Agent Commands</div>
+        <div class="context-body" id="ctx-commands"><span style="color:var(--text-dim);font-style:italic">No commands yet</span></div>
+      </div>
+      <div class="pdi-panel" id="pdi-panel" style="display:none">
+        <div class="pdi-panel-title">&#128200; Exploration Dynamics (PDI)</div>
+        <div class="pdi-chart"><canvas id="pdi-canvas"></canvas></div>
+        <div class="pdi-legend">
+          <span class="pdi-legend-item"><span class="pdi-legend-dot" style="background:var(--green)"></span>Exec Grounding</span>
+          <span class="pdi-legend-item"><span class="pdi-legend-dot" style="background:var(--red)"></span>Plan Stagnation</span>
+          <span class="pdi-legend-item"><span class="pdi-legend-dot" style="background:var(--amber)"></span>Ossification</span>
+          <span class="pdi-legend-item"><span class="pdi-legend-dot" style="background:var(--purple)"></span>Weighted PDI</span>
+          <span class="pdi-legend-item"><span class="pdi-legend-dot" style="background:rgba(255,255,255,.2)"></span>Threshold</span>
+        </div>
+        <div id="pdi-status" style="font-size:9px;font-family:var(--font-mono);color:var(--text-dim);margin-top:4px"></div>
+        <div id="pdi-table" style="margin-top:8px;max-height:140px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Confirm cancel dialog -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">Cancel Task</div>
+    <div class="confirm-msg" id="confirm-msg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn cancel" onclick="closeConfirm()">Keep</button>
+      <button class="confirm-btn confirm" onclick="doCancel()">Confirm Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const ICONS = { pass:'&#10004;', fail:'&#10008;', running:'&#9998;', pending:'&#9673;', skipped:'&#8709;' };
+const state = { tasks:{}, selectedTask:null, config:{} };
+let _pendingCancelTask = null;
+
+let ws;
+function connect() {
+  const proto = location.protocol==='https:'?'wss:':'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen = () => {
+    document.getElementById('ws-dot').className = 'stat-dot pass';
+    document.getElementById('ws-label').textContent = 'Connected';
+  };
+  ws.onclose = () => {
+    document.getElementById('ws-dot').className = 'stat-dot fail';
+    document.getElementById('ws-label').textContent = 'Disconnected';
+    setTimeout(connect, 3000);
+  };
+  ws.onmessage = (e) => handleEvent(JSON.parse(e.data));
+}
+
+function handleEvent(ev) {
+  if (ev.type === 'init') {
+    Object.assign(state.tasks, ev.state.tasks || {});
+    state.config = ev.state.config || {};
+    renderTaskList(); updateStats();
+    if (state.selectedTask) renderDetail(state.selectedTask);
+    return;
+  }
+  const name = ev.task;
+  if (ev.type === 'task_start') {
+    state.tasks[name] = state.tasks[name] || {
+      name, status:'running', attempts:[], memos:[], llm_calls:[],
+      current_attempt:0, max_retries:ev.max_retries||3,
+      exploration_memo:'', skill_content:'', pdi_history:[],
+    };
+    state.tasks[name].status = 'running';
+  } else if (ev.type === 'attempt_start') {
+    if (state.tasks[name]) state.tasks[name].current_attempt = ev.attempt;
+  } else if (ev.type === 'attempt_done') {
+    if (state.tasks[name]) {
+      state.tasks[name].attempts.push({
+        attempt: ev.attempt, status: ev.status,
+        reward: ev.reward, error: ev.error||'',
+        agent_commands: ev.agent_commands||'',
+        test_summary: ev.test_summary||'',
+        n_passed: ev.n_passed||0, n_tests: ev.n_tests||0,
+      });
+    }
+  } else if (ev.type === 'reflect_done') {
+    if (state.tasks[name]) {
+      state.tasks[name].exploration_memo = ev.memo||'';
+      state.tasks[name].memos.push({ attempt:ev.attempt, memo:ev.memo||'' });
+      if (ev.llm_call) {
+        state.tasks[name].llm_calls.push({ ...ev.llm_call, attempt:ev.attempt });
+      }
+    }
+  } else if (ev.type === 'skill_generated') {
+    if (state.tasks[name]) {
+      state.tasks[name].skill_content = ev.skill_content||'';
+      if (ev.llm_call) {
+        state.tasks[name].llm_calls.push({ ...ev.llm_call, attempt:-1 });
+      }
+    }
+  } else if (ev.type === 'task_done') {
+    if (state.tasks[name]) {
+      if (state.tasks[name].status !== 'skipped') {
+        state.tasks[name].status = ev.success ? 'pass' : 'fail';
+      }
+      state.tasks[name].final_reward = ev.final_reward;
+    }
+  } else if (ev.type === 'task_cancelled') {
+    if (state.tasks[name]) {
+      state.tasks[name].status = 'skipped';
+    }
+  } else if (ev.type === 'pdi_update') {
+    if (state.tasks[name]) {
+      if (!state.tasks[name].pdi_history) state.tasks[name].pdi_history = [];
+      state.tasks[name].pdi_history.push({
+        attempt: ev.attempt, step: ev.step,
+        proxy_exec: ev.proxy_exec, proxy_plan: ev.proxy_plan,
+        proxy_oss: ev.proxy_oss, raw_pdi: ev.raw_pdi,
+        weight: ev.weight, weighted_pdi: ev.weighted_pdi,
+        triggered: ev.triggered, level: ev.level,
+      });
+    }
+  } else if (ev.type === 'pipeline_done') {
+    document.getElementById('ws-label').textContent = 'Pipeline Complete';
+  }
+  renderTaskList(); updateStats();
+  if (state.selectedTask === name) renderDetail(name);
+}
+
+function renderTaskList() {
+  const el = document.getElementById('task-list');
+  const names = Object.keys(state.tasks).sort();
+  el.innerHTML = names.map(name => {
+    const t = state.tasks[name];
+    const sel = state.selectedTask===name?' selected':'';
+    const icon = ICONS[t.status]||ICONS.pending;
+    const info = t.status==='running'?`${(t.current_attempt||0)+1}/${t.max_retries||3}`:'';
+    const cancelBtn = t.status==='running'
+      ? `<button class="task-cancel-btn" onclick="askCancel(event,'${name}')" title="取消此任务">&#10005;</button>`
+      : '';
+    return `<div class="task-item${sel}" onclick="selectTask('${name}')">
+      <div class="task-icon">${icon}</div>
+      <div class="task-name">${name}</div>
+      ${info?`<span style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono)">${info}</span>`:''}
+      <span class="task-badge ${t.status}">${t.status.toUpperCase()}</span>
+      ${cancelBtn}
+    </div>`;
+  }).join('');
+}
+
+function selectTask(name) {
+  state.selectedTask = name;
+  state._animateDetail = true;
+  renderTaskList();
+  renderDetail(name);
+}
+
+function renderDetail(name) {
+  const t = state.tasks[name];
+  if (!t) return;
+  const header = document.getElementById('detail-header');
+  const content = document.getElementById('detail-content');
+
+  const icon = ICONS[t.status]||'';
+  header.innerHTML = `${icon}&nbsp; ${name} <span class="task-badge ${t.status}">${t.status.toUpperCase()}</span>
+    ${t.skill_content?'<span style="font-size:10px;color:var(--green);margin-left:auto">SKILL.md generated</span>':''}`;
+
+  // Update right sidebar
+  const memoEl = document.getElementById('ctx-memo');
+  const cmdsEl = document.getElementById('ctx-commands');
+  memoEl.textContent = t.exploration_memo || '(no memo yet)';
+
+  const lastAttempt = t.attempts.length > 0 ? t.attempts[t.attempts.length-1] : null;
+  cmdsEl.textContent = (lastAttempt && lastAttempt.agent_commands) ? lastAttempt.agent_commands : '(no commands yet)';
+
+  if ((!t.attempts||t.attempts.length===0) && t.status==='running') {
+    content.innerHTML = `<div class="empty-state"><div class="icon">&#9203;</div><div>Executing attempt #1 ...</div></div>`;
+    return;
+  }
+  if (!t.attempts||t.attempts.length===0) {
+    content.innerHTML = `<div class="empty-state"><div class="icon">&#9673;</div><div>No attempts yet</div></div>`;
+    return;
+  }
+
+  const blocks = [];
+
+  for (let i = 0; i < t.attempts.length; i++) {
+    const a = t.attempts[i];
+    const color = a.status==='PASS'?'var(--green)':a.status==='PARTIAL'?'var(--amber)':'var(--red)';
+    const testInfo = a.n_tests > 0 ? `${a.n_passed}/${a.n_tests} tests` : '';
+
+    blocks.push(`<div class="anim-block" style="font-size:10px;color:var(--text-dim);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Attempt ${a.attempt+1}</div>`);
+
+    let cardHtml = `<div class="attempt-card" style="margin-bottom:12px">
+      <div class="attempt-header">
+        <span style="color:${color}">${a.status} ${testInfo?'<span style="color:var(--text-dim);font-weight:400;font-size:11px">'+testInfo+'</span>':''}</span>
+        <span style="color:var(--text-dim);font-weight:400;font-size:11px">reward: ${a.reward}</span>
+      </div>
+      <div class="attempt-body">`;
+    if (a.test_summary) {
+      cardHtml += `<div style="margin-bottom:8px">${formatTestSummary(a.test_summary)}</div>`;
+    }
+    if (a.error) {
+      cardHtml += `<div style="color:var(--red)">${esc(a.error)}</div>`;
+    }
+    cardHtml += `</div></div>`;
+    blocks.push(cardHtml);
+
+    const reflectCalls = (t.llm_calls||[]).filter(c => c.attempt===a.attempt && c.label==='reflect');
+    for (const call of reflectCalls) {
+      blocks.push(`<div style="margin-bottom:16px">
+        <div class="llm-response-label">Reflect Output</div>
+        <div class="llm-response">${esc(call.response||'')}</div>
+        ${renderPromptToggle(call, 'reflect-'+a.attempt)}
+      </div>`);
+    }
+  }
+
+  if (t.status === 'running') {
+    const cur = t.current_attempt || 0;
+    if (!t.attempts.find(a => a.attempt === cur)) {
+      blocks.push(`<div style="font-size:10px;color:var(--text-dim);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Attempt ${cur+1}</div>`);
+      blocks.push(`<div class="attempt-card" style="margin-bottom:16px"><div class="attempt-header"><span style="color:var(--amber)">&#9998; Executing...</span></div></div>`);
+    }
+  }
+
+  const skillCalls = (t.llm_calls||[]).filter(c => c.label==='skill_generation');
+  if (skillCalls.length > 0 || t.skill_content) {
+    blocks.push(`<div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">&#10004; Skill Generated</div>`);
+    let skillHtml = '';
+    if (t.skill_content) {
+      skillHtml += `<div class="llm-response" style="border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.04);max-height:400px;margin-bottom:8px">${esc(t.skill_content)}</div>`;
+    }
+    for (const call of skillCalls) {
+      skillHtml += renderPromptToggle(call, 'skill');
+    }
+    if (skillHtml) blocks.push(`<div style="margin-bottom:16px">${skillHtml}</div>`);
+  }
+
+  const animate = !!state._animateDetail;
+  state._animateDetail = false;
+
+  content.innerHTML = blocks.map(b =>
+    b.startsWith('<div class="anim-block"') ? b : `<div class="anim-block">${b}</div>`
+  ).join('');
+
+  if (animate) {
+    staggerReveal(content);
+  } else {
+    content.querySelectorAll('.anim-block').forEach(el => el.classList.add('visible'));
+    content.scrollTop = content.scrollHeight;
+    content.querySelectorAll('.prompt-scroll').forEach(setupDragScroll);
+  }
+
+  // ── PDI panel rendering ──
+  renderPDIPanel(t);
+}
+
+let _revealTimer = 0;
+function staggerReveal(container) {
+  clearTimeout(_revealTimer);
+  const items = container.querySelectorAll('.anim-block');
+  let i = 0;
+  function next() {
+    if (i >= items.length) return;
+    items[i].classList.add('visible');
+    items[i].scrollIntoView({ block:'nearest', behavior:'smooth' });
+    i++;
+    _revealTimer = setTimeout(next, 120);
+  }
+  next();
+
+  container.querySelectorAll('.prompt-scroll').forEach(setupDragScroll);
+}
+
+function renderPromptToggle(call, idPrefix) {
+  const id = `p-${idPrefix}`;
+  return `
+    <button class="prompt-toggle" onclick="togglePrompt(event,'${id}')">
+      <span class="arrow">&#9654;</span> LLM Prompt (${call.label})
+    </button>
+    <div class="prompt-panel" id="${id}">
+      <div class="prompt-label">System Prompt</div>
+      <div class="prompt-scroll">${esc(call.system_prompt||'')}</div>
+      <div class="prompt-label">User Prompt</div>
+      <div class="prompt-scroll">${esc(call.user_prompt||'')}</div>
+    </div>`;
+}
+
+function togglePrompt(event, id) {
+  event.stopPropagation();
+  const btn = event.currentTarget;
+  const el = document.getElementById(id);
+  btn.classList.toggle('open');
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) {
+    el.querySelectorAll('.prompt-scroll').forEach(setupDragScroll);
+  }
+}
+
+function setupDragScroll(el) {
+  if (el._dragSetup) return;
+  el._dragSetup = true;
+  let isDown = false, startX, scrollLeft;
+  el.addEventListener('mousedown', e => {
+    isDown = true; el.style.cursor = 'grabbing';
+    startX = e.pageX - el.offsetLeft;
+    scrollLeft = el.scrollLeft;
+  });
+  el.addEventListener('mouseleave', () => { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mouseup', () => { isDown = false; el.style.cursor = 'grab'; });
+  el.addEventListener('mousemove', e => {
+    if (!isDown) return;
+    e.preventDefault();
+    const x = e.pageX - el.offsetLeft;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+}
+
+function formatTestSummary(summary) {
+  return summary.split('\n').map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('✓')) return `<span class="test-line-pass">${esc(line)}</span>`;
+    if (trimmed.startsWith('✗')) return `<span class="test-line-fail">${esc(line)}</span>`;
+    if (trimmed.startsWith('PASSED')) return `<span style="color:var(--green);font-weight:600">${esc(line)}</span>`;
+    if (trimmed.startsWith('FAILED')) return `<span style="color:var(--red);font-weight:600">${esc(line)}</span>`;
+    return esc(line);
+  }).join('\n');
+}
+
+function updateStats() {
+  const tasks = Object.values(state.tasks);
+  const pass = tasks.filter(t=>t.status==='pass').length;
+  const fail = tasks.filter(t=>t.status==='fail').length;
+  const running = tasks.filter(t=>t.status==='running').length;
+  const skipped = tasks.filter(t=>t.status==='skipped').length;
+  document.getElementById('stat-pass').textContent = pass;
+  document.getElementById('stat-fail').textContent = fail;
+  document.getElementById('stat-running').textContent = running;
+  document.getElementById('stat-total').textContent = tasks.length;
+  const skipEl = document.getElementById('stat-skipped');
+  if (skipEl) skipEl.textContent = skipped;
+  const done = pass+fail+skipped;
+  const pct = tasks.length>0?(done/tasks.length*100):0;
+  document.getElementById('progress').style.width = pct+'%';
+}
+
+function esc(s) {
+  if (!s) return '';
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function renderPDIPanel(t) {
+  const panel = document.getElementById('pdi-panel');
+  const canvas = document.getElementById('pdi-canvas');
+  const statusEl = document.getElementById('pdi-status');
+  const history = t.pdi_history || [];
+
+  // Show panel only when PDI is enabled and there's data
+  const pdiEnabled = state.config && state.config.pdi_enabled;
+  if (!pdiEnabled || history.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+  panel.style.display = 'block';
+
+  // Status text
+  const last = history[history.length - 1];
+  let statusText = `Step ${last.step} | wPDI: ${last.weighted_pdi.toFixed(3)} | w: ${last.weight.toFixed(2)}`;
+  if (last.triggered) {
+    statusText += ` | `;
+    statusEl.innerHTML = statusText + `<span class="pdi-trigger-badge ${last.level}">${last.level.toUpperCase()}</span>`;
+  } else {
+    statusEl.textContent = statusText;
+  }
+
+  // Draw chart on canvas
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.parentElement.getBoundingClientRect();
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  ctx.scale(dpr, dpr);
+  const W = rect.width, H = rect.height;
+  ctx.clearRect(0, 0, W, H);
+
+  if (history.length < 1) return;
+
+  const pad = { l: 30, r: 10, t: 10, b: 18 };
+  const cw = W - pad.l - pad.r;
+  const ch = H - pad.t - pad.b;
+
+  // Compute Y range from all values
+  let allVals = [];
+  for (const h of history) {
+    allVals.push(h.proxy_exec, -h.proxy_plan, -h.proxy_oss, h.weighted_pdi);
+  }
+  // Include threshold line
+  const threshold = -0.5;
+  allVals.push(threshold);
+  let yMin = Math.min(...allVals) - 0.1;
+  let yMax = Math.max(...allVals) + 0.1;
+  if (yMin === yMax) { yMin -= 1; yMax += 1; }
+
+  const xStep = history.length > 1 ? cw / (history.length - 1) : cw / 2;
+  const toX = (i) => pad.l + i * xStep;
+  const toY = (v) => pad.t + ch * (1 - (v - yMin) / (yMax - yMin));
+
+  // Grid lines
+  ctx.strokeStyle = 'rgba(255,255,255,.06)';
+  ctx.lineWidth = 1;
+  const nGrid = 4;
+  for (let i = 0; i <= nGrid; i++) {
+    const y = pad.t + (ch / nGrid) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+  }
+
+  // Zero line
+  if (yMin < 0 && yMax > 0) {
+    ctx.strokeStyle = 'rgba(255,255,255,.15)';
+    ctx.setLineDash([4, 4]);
+    const y0 = toY(0);
+    ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(W - pad.r, y0); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // Threshold line
+  ctx.strokeStyle = 'rgba(255,255,255,.2)';
+  ctx.setLineDash([3, 3]);
+  const yThresh = toY(threshold);
+  ctx.beginPath(); ctx.moveTo(pad.l, yThresh); ctx.lineTo(W - pad.r, yThresh); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw series
+  const series = [
+    { key: 'proxy_exec', color: '#34d399', sign: 1 },
+    { key: 'proxy_plan', color: '#f87171', sign: -1 },
+    { key: 'proxy_oss',  color: '#fbbf24', sign: -1 },
+    { key: 'weighted_pdi', color: '#a78bfa', sign: 1 },
+  ];
+
+  for (const s of series) {
+    ctx.strokeStyle = s.color;
+    ctx.lineWidth = s.key === 'weighted_pdi' ? 2 : 1.2;
+    ctx.beginPath();
+    for (let i = 0; i < history.length; i++) {
+      const v = history[i][s.key] * s.sign;
+      const x = toX(i), y = toY(v);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Dots
+    ctx.fillStyle = s.color;
+    for (let i = 0; i < history.length; i++) {
+      const v = history[i][s.key] * s.sign;
+      ctx.beginPath();
+      ctx.arc(toX(i), toY(v), 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Trigger markers (vertical red/amber lines)
+  for (let i = 0; i < history.length; i++) {
+    if (history[i].triggered) {
+      const x = toX(i);
+      ctx.strokeStyle = history[i].level === 'strong' ? 'rgba(248,113,113,.4)' : 'rgba(251,191,36,.4)';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, H - pad.b); ctx.stroke();
+      ctx.setLineDash([]);
+    }
+  }
+
+  // X-axis labels
+  ctx.fillStyle = 'rgba(255,255,255,.3)';
+  ctx.font = '8px monospace';
+  ctx.textAlign = 'center';
+  for (let i = 0; i < history.length; i++) {
+    ctx.fillText(String(history[i].step + 1), toX(i), H - 3);
+  }
+
+  // Y-axis labels
+  ctx.textAlign = 'right';
+  for (let i = 0; i <= nGrid; i++) {
+    const v = yMax - (yMax - yMin) * (i / nGrid);
+    ctx.fillText(v.toFixed(1), pad.l - 4, pad.t + (ch / nGrid) * i + 3);
+  }
+
+  // ── PDI values table ──
+  const tableEl = document.getElementById('pdi-table');
+  const fc = (v, color) => `<span style="color:${color}">${v >= 0 ? '+' : ''}${v.toFixed(3)}</span>`;
+  let rows = history.map(h => {
+    const trClass = h.triggered ? ' class="pdi-triggered"' : '';
+    const trigCell = h.triggered
+      ? `<span class="pdi-trigger-badge ${h.level}">${h.level}</span>`
+      : '<span style="color:var(--text-dim)">—</span>';
+    return `<tr${trClass}>
+      <td>${h.step + 1}</td>
+      <td>${fc(h.proxy_exec, 'var(--green)')}</td>
+      <td>${fc(-h.proxy_plan, 'var(--red)')}</td>
+      <td>${fc(-h.proxy_oss, 'var(--amber)')}</td>
+      <td>${fc(h.raw_pdi, 'var(--text)')}</td>
+      <td>${h.weight.toFixed(2)}</td>
+      <td style="font-weight:600">${fc(h.weighted_pdi, 'var(--purple)')}</td>
+      <td>${trigCell}</td>
+    </tr>`;
+  }).join('');
+  tableEl.innerHTML = `<table class="pdi-table-inner">
+    <thead><tr>
+      <th>Step</th><th style="color:var(--green)">Exec</th><th style="color:var(--red)">Plan</th>
+      <th style="color:var(--amber)">Oss</th><th>Raw</th><th>W</th>
+      <th style="color:var(--purple)">wPDI</th><th>Trigger</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function goHome() {
+  state.selectedTask = null;
+  renderTaskList();
+  document.getElementById('detail-header').textContent = 'Select a task';
+  document.getElementById('detail-content').innerHTML =
+    '<div class="empty-state"><div class="icon">&#9881;</div><div>Click a task to view details</div></div>';
+  document.getElementById('ctx-memo').innerHTML =
+    '<span style="color:var(--text-dim);font-style:italic">No memo yet</span>';
+  document.getElementById('ctx-commands').innerHTML =
+    '<span style="color:var(--text-dim);font-style:italic">No commands yet</span>';
+  document.getElementById('pdi-panel').style.display = 'none';
+}
+
+function toggleContextPanel() {
+  document.getElementById('context-wrapper').classList.toggle('collapsed');
+}
+
+function askCancel(event, taskName) {
+  event.stopPropagation();
+  _pendingCancelTask = taskName;
+  document.getElementById('confirm-msg').textContent = `Are you sure you want to cancel task "${taskName}"? This task will be marked as SKIPPED and will not be retried.`;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() {
+  _pendingCancelTask = null;
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+
+function doCancel() {
+  const name = _pendingCancelTask;
+  closeConfirm();
+  if (!name) return;
+  fetch(`/api/cancel/${encodeURIComponent(name)}`, { method: 'POST' })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) console.warn('Cancel failed:', data.error);
+    })
+    .catch(err => console.error('Cancel request error:', err));
+}
+
+connect();
+</script>
+</body>
+</html>
