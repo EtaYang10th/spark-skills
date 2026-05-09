@@ -1,338 +1,345 @@
 #!/usr/bin/env python3
-"""Generate an animated GIF of PDI exploration dynamics for the two case-study tasks.
+"""Animated GIF of the paper Figure 7 "Exploration dynamics (PDI)".
 
-Key visual design choices:
-  - Row 1 (w/ PDI intervention): green sash, green-tinted panel, check-mark at the
-    step where the agent finally hits PASS (so viewers see that an early stop is a
-    SUCCESS, not truncation).
-  - Row 2 (w/o PDI, observe-only): red sash, red-tinted panel, cross-mark at the
-    final attempt showing 0 successes after the budget is exhausted.
-  - Shared four lines per panel: phi_exec, phi_plan, phi_oss, warmup-weighted PDI.
+Data and visual style match paper/figure/exploration_dynamics_pdi_two_tasks.py
+exactly (1x4 panels, four signals, Soft/Strong triggers, central w/ vs w/o
+separator). We simply reveal the trajectory step by step over time.
 
 Output: blog/assets/img/exploration_dynamics_pdi_two_tasks.gif
 """
 
 from __future__ import annotations
-import json
+
+import math
+import re
 from pathlib import Path
 
-import numpy as np
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.patheffects as pe
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
+import numpy as np
 from matplotlib.animation import FuncAnimation, PillowWriter
-import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
 
-CODE_DIR = Path(__file__).resolve().parents[1]
-BLOG_IMG = CODE_DIR.parent / "blog" / "assets" / "img"
-OUT = BLOG_IMG / "exploration_dynamics_pdi_two_tasks.gif"
+# ---------------------------------------------------------------------------
+# Output target
+# ---------------------------------------------------------------------------
+OUTPUT = (
+    Path(__file__).resolve().parents[1].parent
+    / "blog" / "assets" / "img" / "exploration_dynamics_pdi_two_tasks.gif"
+)
 
-TASKS = [
-    ("3d-scan-calc", "Task: 3d-scan-calc"),
-    ("manufacturing-codebook-normalization", "Task: manufacturing-codebook-normalization"),
+# ---------------------------------------------------------------------------
+# Panels — verbatim from the paper figure script
+# ---------------------------------------------------------------------------
+PANELS: list[tuple[str, str, str]] = [
+    ("manufacturing-codebook-normalizatio", "with PDI", """
+Step    Exec    Plan    Oss    Raw     W     wPDI    Trigger
+1       +0.276  +0.000  +0.000  +0.276  0.00  +0.000  —
+2       +0.305  -0.186  -0.147  -1.000  0.50  -0.500  —
+3       +0.287  -0.281  -0.876  -2.680  1.00  -2.680  soft
+4       +0.321  -0.354  -0.651  -0.391  1.00  -0.391  —
+5       +0.234  -0.270  -0.666  -2.725  1.00  -2.725  soft
+6       +0.302  -0.163  -0.370  +1.208  1.00  +1.208  —
+7       +0.322  -0.257  -0.452  +0.653  1.00  +0.653  —
+"""),
+    ("manufacturing-codebook-normalizatio", "without PDI", """
+Step	Exec	Plan	Oss	Raw	W	wPDI
+1	+0.234	+0.000	+0.000	+0.234	0.00	+0.000
+2	+0.328	-0.175	-0.317	-1.000	0.50	-0.500
+3	+0.239	-0.339	-0.886	-3.181	1.00	-3.181
+4	+0.283	-0.437	-0.667	-1.468	1.00	-1.468
+5	+0.200	-0.374	-0.661	-2.464	1.00	-2.464
+6   +0.230	-0.369	-0.955	-3.207	1.00	-3.207
+7   +0.297	-0.509	-0.787	-2.486	1.00	-2.486
+    """),
+    ("3d-scan-calc", "with PDI", """
+Step    Exec    Plan    Oss    Raw     W     wPDI    Trigger
+1       +0.307  +0.000  +0.000  +0.307  0.00  +0.000  —
+2       +0.380  -0.300  -0.720  -1.000  0.50  -0.500  —
+3       +0.418  -0.296  -0.842  -0.481  1.00  -0.481  —
+4       +0.440  -0.359  -0.867  -0.529  1.00  -0.529  soft
+5       +0.369  -0.312  -0.910  -1.458  1.00  -1.458  strong
+6       +0.000  +0.000  -0.500  -0.304  1.00  -0.304  —
+7       +0.000  +0.000  +0.000  +1.091  1.00  +1.091  —
+"""),
+    ("3d-scan-calc", "without PDI", """
+Step	Exec	Plan	Oss	Raw	W	wPDI
+1	+0.275	+0.000	+0.000	+0.275	0.00	+0.000
+2	+0.308	-0.333	-0.768	-1.000	0.50	-0.500
+3	+0.353	-0.281	-0.804	+0.009	1.00	+0.009
+4	+0.367	-0.329	-0.794	-0.136	1.00	-0.136
+5	+0.278	-0.411	-0.975	-2.883	1.00	-2.883
+6	+0.257	-0.480	-0.814	-2.744	1.00	-2.744
+7	+0.000	-0.508	-0.420	-2.659	1.00	-2.659
+"""),
 ]
 
-SKILLS_ROOT = CODE_DIR / "spark_skills_gen" / "skills_gen_result"
-TAU_SOFT = -0.5
+SERIES_STYLES = {
+    "exec": {"label": "Exec Grounding", "color": "#2ec4b6", "marker": "o", "linewidth": 1.9, "markersize": 4.8, "zorder": 4},
+    "plan": {"label": "Plan Stagnation", "color": "#ff6b6b", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
+    "oss":  {"label": "Ossification",   "color": "#f6bd16", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
+    "wpdi": {"label": "Weighted PDI",   "color": "#8b5cf6", "marker": "o", "linewidth": 2.4, "markersize": 5.2, "zorder": 5},
+}
+TRIGGER_STYLES = {
+    "soft":   {"label": "Soft trigger",   "color": "#b5651d"},
+    "strong": {"label": "Strong trigger", "color": "#8c2f39"},
+}
+PLOTTED_COLUMNS = ("exec", "plan", "oss", "wpdi")
 
 
-def load_attempts(tag: str, task: str) -> dict:
-    p = SKILLS_ROOT / tag / task / "attempts.json"
-    return json.loads(p.read_text())
+def configure_style() -> None:
+    plt.rcParams.update(
+        {
+            "figure.dpi": 140,
+            "savefig.dpi": 140,
+            "font.family": "serif",
+            "font.serif": ["DejaVu Serif", "Times New Roman", "Times"],
+            "mathtext.fontset": "stix",
+            "axes.spines.top": False,
+            "axes.spines.right": False,
+            "axes.linewidth": 0.95,
+            "axes.labelsize": 11.5,
+            "axes.titlesize": 10.8,
+            "xtick.labelsize": 9.2,
+            "ytick.labelsize": 9.2,
+            "xtick.direction": "in",
+            "ytick.direction": "in",
+            "xtick.major.width": 0.8,
+            "ytick.major.width": 0.8,
+            "legend.fontsize": 8.2,
+        }
+    )
 
 
-def extract(data: dict) -> dict:
-    hist = data["pdi"]["history"]
-    attempts = data["attempts"]
-    steps = [h["step"] for h in hist]
-    # Identify the first attempt that returned PASS, if any.
-    pass_attempt = next((a["attempt"] for a in attempts if a["status"] == "PASS"), None)
-    final_status = attempts[-1]["status"] if attempts else "UNKNOWN"
-    final_reward = attempts[-1]["reward"] if attempts else 0.0
-    return {
-        "step": steps,
-        "phi_exec": [h["proxy_exec"] for h in hist],
-        "phi_plan": [h["proxy_plan"] for h in hist],
-        "phi_oss": [h["proxy_oss"] for h in hist],
-        "pdi": [h["weighted_pdi"] for h in hist],
-        "triggered": [h["triggered"] for h in hist],
-        "level": [h["level"] for h in hist],
-        "n_attempts": len(attempts),
-        "pass_attempt": pass_attempt,
-        "final_status": final_status,
-        "final_reward": final_reward,
-    }
+def normalize_trigger(token: str) -> str | None:
+    t = token.strip().lower()
+    if t in {"—", "-", "--", "none", "null", "na", "n/a"}:
+        return None
+    return t
 
 
-def main():
-    BLOG_IMG.mkdir(parents=True, exist_ok=True)
-
-    panels = []
-    for task_id, title in TASKS:
-        panels.append(
+def parse_table(table_text: str) -> list[dict]:
+    rows: list[dict] = []
+    for raw_line in table_text.strip().splitlines():
+        line = raw_line.strip()
+        if not line or line.lower().startswith("step"):
+            continue
+        parts = re.split(r"\s+", line)
+        if len(parts) == 7:
+            parts.append("—")
+        if len(parts) != 8:
+            raise ValueError(f"Malformed row: {raw_line!r}")
+        rows.append(
             {
-                "title": title,
-                "pdi_on": extract(load_attempts("all_model_pdi", task_id)),
-                "pdi_off": extract(load_attempts("all_model_observe_only", task_id)),
+                "step": int(parts[0]),
+                "exec": float(parts[1]),
+                "plan": float(parts[2]),
+                "oss":  float(parts[3]),
+                "raw":  float(parts[4]),
+                "weight": float(parts[5]),
+                "wpdi": float(parts[6]),
+                "trigger": normalize_trigger(parts[7]),
             }
         )
+    return sorted(rows, key=lambda r: r["step"])
 
-    # Use the LONGEST history across all four panels for a common x-axis so that
-    # early-success panels visibly stop before the x-axis ends.
-    max_steps = max(
-        max(len(p["pdi_on"]["step"]), len(p["pdi_off"]["step"])) for p in panels
+
+def round_to_step(value: float, step: float, *, up: bool) -> float:
+    scaled = value / step
+    r = math.ceil(scaled) if up else math.floor(scaled)
+    return r * step
+
+
+def compute_y_limits(all_rows: list[list[dict]]) -> tuple[float, float]:
+    values = [float(r[c]) for rows in all_rows for r in rows for c in PLOTTED_COLUMNS]
+    lo, hi = min(values), max(values)
+    span = max(hi - lo, 1.0)
+    pad = max(0.25, 0.08 * span)
+    return round_to_step(lo - pad, 0.5, up=False), round_to_step(hi + pad, 0.5, up=True)
+
+
+def annotate_group_contrast(fig, left_ax, right_ax, left_label, right_label) -> None:
+    left_pos = left_ax.get_position()
+    right_pos = right_ax.get_position()
+    center_x = (left_pos.x1 + right_pos.x0) / 2
+    center_y = left_pos.y0 + 0.43 * (left_pos.y1 - left_pos.y0)
+    pair_height = left_pos.y1 - left_pos.y0
+    line_half = 0.10 * pair_height
+    label_y = center_y + 0.002
+    arrow_y = label_y - 0.028
+    arrow_span = 0.046
+    label_gap = 0.004
+
+    fig.add_artist(
+        Line2D([center_x, center_x], [center_y - line_half, center_y + line_half],
+               transform=fig.transFigure, color="0.45", linestyle=(0, (3, 2)),
+               linewidth=1.35, zorder=2)
     )
-    x_right = max_steps - 0.3
+    fx = [pe.withStroke(linewidth=2.4, foreground="white", alpha=0.96)]
+    fig.text(center_x - label_gap, label_y, left_label, ha="right", va="center",
+             fontsize=7.8, fontweight="bold", fontstyle="italic",
+             color="#2f6f2f", path_effects=fx)
+    fig.text(center_x + label_gap, label_y, right_label, ha="left", va="center",
+             fontsize=7.8, fontweight="bold", fontstyle="italic",
+             color="#9c3d18", path_effects=fx)
+    fig.add_artist(FancyArrowPatch(
+        (center_x - 0.007, arrow_y), (center_x - arrow_span, arrow_y),
+        transform=fig.transFigure,
+        arrowstyle="Simple,tail_width=0.7,head_width=4.8,head_length=5.8",
+        mutation_scale=1, linewidth=0, color="#2f6f2f", shrinkA=0, shrinkB=0, alpha=0.96))
+    fig.add_artist(FancyArrowPatch(
+        (center_x + 0.007, arrow_y), (center_x + arrow_span, arrow_y),
+        transform=fig.transFigure,
+        arrowstyle="Simple,tail_width=0.7,head_width=4.8,head_length=5.8",
+        mutation_scale=1, linewidth=0, color="#9c3d18", shrinkA=0, shrinkB=0, alpha=0.96))
 
-    # 2 columns (one per task) x 2 rows (on / off)
-    fig, axes = plt.subplots(
-        2, 2, figsize=(13.0, 7.4), sharex=False, sharey=False,
-        gridspec_kw={"hspace": 0.45, "wspace": 0.22},
-    )
 
-    COLORS = {
-        "phi_exec": "#15803d",
-        "phi_plan": "#b45309",
-        "phi_oss":  "#dc2626",
-        "pdi":      "#1a56db",
-    }
-    LABELS = {
-        "phi_exec": r"$\phi_{\mathrm{exec}}$",
-        "phi_plan": r"$\phi_{\mathrm{plan}}$",
-        "phi_oss":  r"$\phi_{\mathrm{oss}}$",
-        "pdi":      r"weighted PDI",
-    }
+def main() -> None:
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    configure_style()
 
-    ROW_STYLE = {
-        0: {  # w/ PDI intervention
-            "tint": "#ecfdf5",
-            "accent": "#059669",
-            "label": "w/ PDI intervention",
-            "icon": "✓",
-            "sash_bg": "#059669",
-        },
-        1: {  # observe-only
-            "tint": "#fef2f2",
-            "accent": "#b91c1c",
-            "label": "w/o PDI (observe-only)",
-            "icon": "✗",
-            "sash_bg": "#b91c1c",
-        },
-    }
+    parsed = [(name, grp, parse_table(tbl)) for name, grp, tbl in PANELS]
+    all_rows = [rows for _, _, rows in parsed]
+    y_limits = compute_y_limits(all_rows)
+    max_steps = max(len(r) for r in all_rows)
 
-    plot_state = []
-    for col, panel in enumerate(panels):
-        for row, cond_key in [(0, "pdi_on"), (1, "pdi_off")]:
-            ax = axes[row, col]
-            d = panel[cond_key]
-            style = ROW_STYLE[row]
+    n_panels = len(parsed)
+    fig, axes = plt.subplots(1, n_panels, figsize=(3.6 * n_panels, 3.8), sharey=True)
+    axes = np.atleast_1d(axes)
 
-            ax.set_xlim(-0.4, x_right)
-            ymin = min([*d["phi_exec"], *d["phi_plan"], *d["phi_oss"], *d["pdi"], TAU_SOFT]) - 0.5
-            ymax = max([*d["phi_exec"], *d["phi_plan"], *d["phi_oss"], *d["pdi"], 1.1]) + 0.8
-            ax.set_ylim(ymin, ymax)
+    # Pre-configure axes (static layer)
+    per_panel = []
+    for ax, (task_name, group, rows) in zip(axes, parsed):
+        steps = np.asarray([r["step"] for r in rows])
+        ax.axhline(0.0, color="0.35", linestyle=(0, (4, 2)), linewidth=1.25, zorder=1)
+        ax.grid(axis="y", linestyle=":", linewidth=0.65, alpha=0.28)
+        ax.set_axisbelow(True)
+        ax.set_xlim(steps.min() - 0.25, steps.max() + 0.25)
+        ax.set_ylim(*y_limits)
+        ax.set_xticks(steps)
+        ax.yaxis.set_major_locator(mticker.MultipleLocator(0.5))
+        ax.set_xlabel("Step")
 
-            # Tinted background so the row identity (with/without PDI) is immediate
-            ax.set_facecolor(style["tint"])
+        # Task label chip (upper-left of panel)
+        ax.text(0.018, 1.02, task_name, transform=ax.transAxes,
+                ha="left", va="bottom", fontsize=7.8, fontweight="semibold",
+                color="0.30")
 
-            ax.axhline(0, color="#94a3b8", linewidth=0.8, alpha=0.8)
-            ax.axhline(TAU_SOFT, color="#b45309", linewidth=0.9, linestyle="--", alpha=0.6)
-            ax.text(
-                x_right - 0.05, TAU_SOFT,
-                r"$\tau=-0.5$", fontsize=8, color="#b45309",
-                va="bottom", ha="right",
+        # Animated line objects — one per series
+        lines = {}
+        for col, style in SERIES_STYLES.items():
+            (ln,) = ax.plot([], [],
+                            color=style["color"], marker=style["marker"],
+                            linewidth=style["linewidth"], markersize=style["markersize"],
+                            zorder=style["zorder"], solid_capstyle="round")
+            lines[col] = ln
+
+        # Triggers: precompute the step and a placeholder axvline / chip;
+        # we reveal them when the frame reaches that step.
+        triggers = []  # list of (step, level, vline, text_chip)
+        top_y = y_limits[1] - 0.08 * (y_limits[1] - y_limits[0])
+        for r in rows:
+            lvl = r["trigger"]
+            if lvl not in TRIGGER_STYLES:
+                continue
+            st = TRIGGER_STYLES[lvl]
+            vl = ax.axvline(r["step"], color=st["color"], linestyle=(0, (4, 2.4)),
+                            linewidth=1.8, alpha=0.0, zorder=1)
+            chip = ax.text(
+                r["step"], top_y, st["label"].split()[0],
+                rotation=90, ha="center", va="top", fontsize=8.4,
+                fontweight="bold", color=st["color"],
+                bbox={"boxstyle": "round,pad=0.16", "facecolor": "white",
+                      "edgecolor": st["color"], "linewidth": 0.5, "alpha": 0.0},
+                alpha=0.0,
             )
+            triggers.append((r["step"], lvl, vl, chip))
 
-            for spine_name in ["top", "right"]:
-                ax.spines[spine_name].set_visible(False)
-            # Strong side-border that matches the row accent
-            ax.spines["left"].set_color(style["accent"])
-            ax.spines["left"].set_linewidth(2.2)
-            ax.spines["bottom"].set_color("#cbd5e1")
-            ax.tick_params(colors="#475569", labelsize=9)
-            ax.grid(True, linestyle=":", linewidth=0.6, color="#e2e8f0", alpha=0.9)
-            ax.set_xticks(np.arange(0, max_steps))
+        per_panel.append({"ax": ax, "rows": rows, "lines": lines, "triggers": triggers})
 
-            # Task title on top row only
-            if row == 0:
-                ax.set_title(panel["title"], fontsize=11.5, fontweight="bold",
-                             color="#0f172a", pad=10)
+    axes[0].set_ylabel("PDI Score")
 
-            # Row label as a colored sash on the left
-            ax.text(
-                -0.15, 0.5, f"{style['icon']}  {style['label']}",
-                transform=ax.transAxes,
-                fontsize=10.5, fontweight="bold",
-                color="#ffffff",
-                rotation=90, va="center", ha="center",
-                bbox=dict(boxstyle="round,pad=0.35",
-                          facecolor=style["sash_bg"], edgecolor="none"),
-            )
-
-            if row == 1:
-                ax.set_xlabel("reflection step k", fontsize=9, color="#475569")
-            ax.set_ylabel("value", fontsize=9, color="#475569")
-
-            # Lines
-            lines = {}
-            for key in ["phi_exec", "phi_plan", "phi_oss", "pdi"]:
-                (ln,) = ax.plot(
-                    [], [],
-                    color=COLORS[key],
-                    linewidth=2.4 if key == "pdi" else 1.7,
-                    marker="o",
-                    markersize=5.0 if key == "pdi" else 3.5,
-                    label=LABELS[key],
-                    alpha=0.95,
-                )
-                lines[key] = ln
-
-            trigger_soft = ax.scatter(
-                [], [], s=140, facecolor="none",
-                edgecolor="#f59e0b", linewidth=2.2, zorder=5, label="soft trigger",
-            )
-            trigger_strong = ax.scatter(
-                [], [], s=200, facecolor="none",
-                edgecolor="#dc2626", linewidth=2.4, zorder=6, label="strong trigger",
-            )
-
-            # Outcome annotation (hidden until animation reveals it)
-            outcome = ax.text(
-                x_right - 0.15, ymax - 0.35, "",
-                fontsize=11.5, fontweight="bold",
-                color="#ffffff",
-                va="top", ha="right",
-                bbox=dict(boxstyle="round,pad=0.45",
-                          facecolor=style["accent"], edgecolor="none", alpha=0.0),
-                zorder=9,
-            )
-
-            # Status bar at top-left of each panel: "attempt k/N · status"
-            status = ax.text(
-                0.015, 0.965, "",
-                transform=ax.transAxes,
-                fontsize=9.5, color=style["accent"],
-                va="top", ha="left", fontweight="bold",
-                bbox=dict(boxstyle="round,pad=0.25",
-                          facecolor="#ffffff", edgecolor=style["accent"],
-                          linewidth=1.0, alpha=0.9),
-                zorder=8,
-            )
-
-            plot_state.append(
-                dict(
-                    ax=ax,
-                    lines=lines,
-                    trigger_soft=trigger_soft,
-                    trigger_strong=trigger_strong,
-                    data=d,
-                    row=row,
-                    style=style,
-                    outcome=outcome,
-                    status=status,
-                )
-            )
-
-    # Shared legend + title
-    handles, labels = plot_state[0]["ax"].get_legend_handles_labels()
+    # Legend
+    legend_handles = [
+        Line2D([0], [0], color=s["color"], marker=s["marker"],
+               linewidth=s["linewidth"], markersize=s["markersize"], label=s["label"])
+        for s in SERIES_STYLES.values()
+    ]
+    for tname in ("soft", "strong"):
+        st = TRIGGER_STYLES[tname]
+        legend_handles.append(Line2D([0], [0], color=st["color"],
+                                     linestyle=(0, (4, 2.4)), linewidth=1.8,
+                                     label=st["label"]))
     fig.legend(
-        handles, labels,
-        loc="lower center", ncol=6, frameon=False, fontsize=10.5,
-        bbox_to_anchor=(0.5, -0.015),
-    )
-    fig.suptitle(
-        "Online PDI intervention — exploration dynamics\n(top: w/ PDI · bottom: observe-only control)",
-        fontsize=13, fontweight="bold", color="#0f172a", y=0.985,
+        handles=legend_handles, loc="upper center",
+        bbox_to_anchor=(0.5, 0.975), ncol=len(legend_handles),
+        frameon=False, columnspacing=0.85, handlelength=2.0,
+        handletextpad=0.45, fontsize=8.6,
     )
 
-    EMPTY = np.zeros((0, 2))
+    fig.subplots_adjust(left=0.055, right=0.995, bottom=0.20, top=0.85, wspace=0.12)
 
-    def init():
+    # Pairwise w/ vs w/o contrast annotations (panels 0-1 and 2-3)
+    pairs = [(0, 1), (2, 3)]
+    for li, ri in pairs:
+        annotate_group_contrast(fig, axes[li], axes[ri],
+                                parsed[li][1], parsed[ri][1])
+
+    # Divider line between the two tasks (between panel 1 and 2)
+    if len(axes) >= 4:
+        p2 = axes[1].get_position()
+        p3 = axes[2].get_position()
+        split_x = (p2.x1 + p3.x0) / 2
+        y0 = min(ax.get_position().y0 for ax in axes) - 0.02
+        y1 = max(ax.get_position().y1 for ax in axes) + 0.01
+        fig.add_artist(Line2D([split_x, split_x], [y0, y1],
+                              transform=fig.transFigure, color="0.55",
+                              linestyle=(0, (3, 3)), linewidth=1.1,
+                              alpha=0.9, zorder=1))
+
+    # ----------------------------------------------------------------- animation
+    def update(frame: int):
+        # frame = last-step index to reveal (0-based → step = frame+1)
         artists = []
-        for st in plot_state:
-            for ln in st["lines"].values():
-                ln.set_data([], [])
+        for panel in per_panel:
+            rows = panel["rows"]
+            n = min(frame + 1, len(rows))
+            xs = [r["step"] for r in rows[:n]]
+            for col, ln in panel["lines"].items():
+                ys = [r[col] for r in rows[:n]]
+                ln.set_data(xs, ys)
                 artists.append(ln)
-            st["trigger_soft"].set_offsets(EMPTY)
-            st["trigger_strong"].set_offsets(EMPTY)
-            st["outcome"].set_text("")
-            st["outcome"].get_bbox_patch().set_alpha(0.0)
-            st["status"].set_text("")
-            artists.extend([st["trigger_soft"], st["trigger_strong"], st["outcome"], st["status"]])
+            # Reveal triggers once their step is reached
+            for step, lvl, vl, chip in panel["triggers"]:
+                visible = step <= (frame + 1)
+                alpha = 0.98 if visible else 0.0
+                vl.set_alpha(alpha)
+                chip.set_alpha(0.98 if visible else 0.0)
+                if visible:
+                    chip.get_bbox_patch().set_alpha(0.84)
+                else:
+                    chip.get_bbox_patch().set_alpha(0.0)
+                artists.extend([vl, chip])
         return artists
 
-    def update(frame_idx):
-        artists = []
-        for st in plot_state:
-            d = st["data"]
-            n = min(frame_idx + 1, len(d["step"]))
-            xs = d["step"][:n]
-            for key, ln in st["lines"].items():
-                ln.set_data(xs, d[key][:n])
-                artists.append(ln)
+    total_reveal = max_steps
+    hold = 6
+    frames = total_reveal + hold
 
-            soft_pts = [
-                [d["step"][i], d["pdi"][i]]
-                for i in range(n) if d["level"][i] == "soft"
-            ]
-            strong_pts = [
-                [d["step"][i], d["pdi"][i]]
-                for i in range(n) if d["level"][i] == "strong"
-            ]
-            st["trigger_soft"].set_offsets(np.array(soft_pts) if soft_pts else EMPTY)
-            st["trigger_strong"].set_offsets(np.array(strong_pts) if strong_pts else EMPTY)
+    def mapper(i: int) -> int:
+        return min(i, total_reveal - 1)
 
-            # Per-panel status + outcome
-            last_step_shown = n - 1 if n > 0 else -1
-            if st["row"] == 0:  # w/ PDI
-                if n >= len(d["step"]):
-                    # Reveal the outcome bubble
-                    if d["pass_attempt"] is not None:
-                        msg = f"✓  SOLVED · attempt {d['pass_attempt']} · reward = {d['final_reward']:.1f}"
-                    else:
-                        msg = f"final status: {d['final_status']}"
-                    st["outcome"].set_text(msg)
-                    st["outcome"].get_bbox_patch().set_alpha(0.95)
-                    st["status"].set_text(
-                        f"reflection steps complete · {len(d['step'])}/{d['n_attempts']} attempts logged"
-                    )
-                else:
-                    st["outcome"].get_bbox_patch().set_alpha(0.0)
-                    st["outcome"].set_text("")
-                    st["status"].set_text(f"reflection step {last_step_shown+1} / {len(d['step'])}")
-            else:  # observe-only
-                if n >= len(d["step"]):
-                    msg = f"✗  {d['n_attempts']} attempts · 0 successes · reward = {d['final_reward']:.1f}"
-                    st["outcome"].set_text(msg)
-                    st["outcome"].get_bbox_patch().set_alpha(0.95)
-                    st["status"].set_text(
-                        f"budget exhausted · {d['n_attempts']} attempts logged"
-                    )
-                else:
-                    st["outcome"].get_bbox_patch().set_alpha(0.0)
-                    st["outcome"].set_text("")
-                    st["status"].set_text(f"reflection step {last_step_shown+1} / {len(d['step'])}")
+    anim = FuncAnimation(fig, lambda i: update(mapper(i)),
+                         frames=frames, interval=480, blit=False)
 
-            artists.extend([st["trigger_soft"], st["trigger_strong"], st["outcome"], st["status"]])
-        return artists
-
-    n_reveal = max_steps + 1
-    hold_frames = 10
-    total_frames = n_reveal + hold_frames
-
-    def frame_mapper(i):
-        return min(i, n_reveal - 1)
-
-    anim = FuncAnimation(
-        fig,
-        lambda i: update(frame_mapper(i)),
-        init_func=init,
-        frames=total_frames,
-        interval=520,
-        blit=False,
-    )
-
-    fig.subplots_adjust(left=0.09, right=0.985, top=0.88, bottom=0.12)
-    print(f"Writing GIF to {OUT} ({total_frames} frames)...")
-    anim.save(OUT, writer=PillowWriter(fps=1.9), dpi=120)
+    print(f"Writing GIF to {OUTPUT} ({frames} frames)...")
+    anim.save(OUTPUT, writer=PillowWriter(fps=2.1), dpi=140)
+    plt.close(fig)
     print("Done.")
 
 
