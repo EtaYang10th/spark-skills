@@ -11,10 +11,15 @@
   <a href="https://github.com/EtaYang10th/spark-skills">
     <img src="https://img.shields.io/badge/Code-GitHub-24292e?logo=github&logoColor=white" alt="SPARK code"/>
   </a>
+  <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">
+    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-SPARK__PDI__Trajectory-FFD21E?labelColor=1f1300" alt="Hugging Face Dataset"/>
+  </a>
 </p>
 
 <p align="center">
   🔗 <b>Project page / Blog:</b> <a href="https://etayang10th.github.io/spark.github.io/">https://etayang10th.github.io/spark.github.io/</a>
+  <br/>
+  🤗 <b>Dataset:</b> <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory</a>
 </p>
 
 <p align="center">
@@ -177,6 +182,27 @@ After a typical run you will find:
 <p align="center">
   <img src="figure/spark_demo.gif" alt="SPARK skill-generation demo" width="820"/>
 </p>
+
+---
+
+## Dataset: SPARK PDI Trajectory (Hugging Face)
+
+The full exploration memos, successful trajectories, and distilled `SKILL.md` artifacts used for PDI analysis are released on the Hugging Face Hub:
+
+<p align="center">
+  <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">
+    <img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-EtaYang10th%2FSPARK__PDI__Trajectory-FFD21E?labelColor=1f1300" alt="SPARK_PDI_Trajectory on Hugging Face"/>
+  </a>
+</p>
+
+```bash
+# via huggingface_hub
+pip install huggingface_hub
+huggingface-cli download EtaYang10th/SPARK_PDI_Trajectory --repo-type dataset --local-dir ./spark_pdi_trajectory
+
+# or via git (large files use Git LFS / xet)
+git clone https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory
+```
 
 ---
 
