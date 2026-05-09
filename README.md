@@ -48,6 +48,43 @@ At the centre sits the **Posterior Distillation Index (PDI)** — a trajectory-l
 
 ---
 
+## Demo
+
+<p align="center">
+  <img src="figure/spark_demo.gif" alt="SPARK skill-generation demo" width="820"/>
+</p>
+
+---
+
+## Case studies
+
+Two short animations, regenerated directly from the logged trajectories, illustrate when PDI matters most.
+
+### Case 1 · lean4-proof — Non-PDI skill vs PDI-refined skill
+
+Held-out student (Claude Haiku 4.5): 15 trial-and-error commands with repeated failures under the non-PDI skill, then 5 clean commands reaching `reward = 1.0` on the first `lake env lean -DwarningAsError=true` compile once the PDI-refined skill is in place.
+
+<p align="center">
+  <img src="figure/case1_lean4_before_after.gif" alt="Case 1: lean4-proof before vs after" width="880"/>
+</p>
+
+### Case 2 · Online PDI intervention — w/ PDI vs observe-only
+
+Four signals per panel (`phi_exec`, `phi_plan`, `phi_oss`, warmup-weighted proxy PDI) replayed step by step for two tasks. Orange circles mark soft interventions, red circles mark strong interventions. PDI-enabled runs recover into the positive region; observe-only controls remain stuck below zero.
+
+<p align="center">
+  <img src="figure/exploration_dynamics_pdi_two_tasks.gif" alt="Case 2: online PDI intervention dynamics" width="880"/>
+</p>
+
+Both animations are produced by small standalone scripts:
+
+```bash
+python scripts/make_case1_lean4_gif.py
+python scripts/make_exploration_dynamics_gif.py
+```
+
+---
+
 ## How it works
 
 The skill-generation loop is `execute → judge → reflect → retry → distill`:
@@ -174,43 +211,6 @@ After a typical run you will find:
 - Harbor execution outputs — `spark-jobs/`
 - distilled skills and attempt logs — `spark_skills_gen/skills_gen_result/<model>/<task>/`
 - evaluation summaries — `spark_skills_gen/skills_eval_result/<model>/<run-id>/`
-
----
-
-## Demo
-
-<p align="center">
-  <img src="figure/spark_demo.gif" alt="SPARK skill-generation demo" width="820"/>
-</p>
-
----
-
-## Case studies
-
-Two short animations, regenerated directly from the logged trajectories, illustrate when PDI matters most.
-
-### Case 1 · lean4-proof — Non-PDI skill vs PDI-refined skill
-
-Held-out student (Claude Haiku 4.5): 15 trial-and-error commands with repeated failures under the non-PDI skill, then 5 clean commands reaching `reward = 1.0` on the first `lake env lean -DwarningAsError=true` compile once the PDI-refined skill is in place.
-
-<p align="center">
-  <img src="figure/case1_lean4_before_after.gif" alt="Case 1: lean4-proof before vs after" width="880"/>
-</p>
-
-### Case 2 · Online PDI intervention — w/ PDI vs observe-only
-
-Four signals per panel (`phi_exec`, `phi_plan`, `phi_oss`, warmup-weighted proxy PDI) replayed step by step for two tasks. Orange circles mark soft interventions, red circles mark strong interventions. PDI-enabled runs recover into the positive region; observe-only controls remain stuck below zero.
-
-<p align="center">
-  <img src="figure/exploration_dynamics_pdi_two_tasks.gif" alt="Case 2: online PDI intervention dynamics" width="880"/>
-</p>
-
-Both animations are produced by small standalone scripts:
-
-```bash
-python scripts/make_case1_lean4_gif.py
-python scripts/make_exploration_dynamics_gif.py
-```
 
 ---
 
