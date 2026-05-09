@@ -70,7 +70,7 @@ Held-out student (Claude Haiku 4.5): 15 trial-and-error commands with repeated f
 
 ### Case 2 · Online PDI intervention — w/ PDI vs observe-only
 
-Four signals per panel (`phi_exec`, `phi_plan`, `phi_oss`, warmup-weighted proxy PDI) replayed step by step for two tasks. Orange circles mark soft interventions, red circles mark strong interventions. PDI-enabled runs recover into the positive region; observe-only controls remain stuck below zero.
+Top row (green panels) uses online PDI intervention; bottom row (red panels) is the observe-only control. Both rows run on the same two tasks with the same budget. The top row **ends early because the agent already solved the task** (reward 1.0 at attempt 8 / attempt 4); the bottom row exhausts the full attempt budget with 0 successes. Orange circles mark soft interventions, red circles mark strong ones.
 
 <p align="center">
   <img src="figure/exploration_dynamics_pdi_two_tasks.gif" alt="Case 2: online PDI intervention dynamics" width="880"/>
