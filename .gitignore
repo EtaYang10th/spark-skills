@@ -66,7 +66,11 @@ spark-jobs/
 spark-jobs-*
 
 # Skill generation / evaluation outputs and agent trajectories
-spark_skills_gen/skills_gen_result*/
+# Use /** (not just /) on skills_gen_result so that specific files under
+# skills_gen_result/all_model_pdi/<task>/ can be re-included via the
+# allow-list block further below. Directory-level ignore (trailing /)
+# would prevent git from descending into those folders at all.
+spark_skills_gen/skills_gen_result*/**
 spark_skills_gen/skills_eval_result*/
 spark_skills_gen/case_study_trajectories/
 spark_skills_gen/**/trajectories/
@@ -184,3 +188,17 @@ scripts/run_eval_skills_openai_compatible.local.sh
 scripts/run_skills_gen_pdi_observe_only.local.sh
 scripts/run_*_variants.sh
 scripts/run_casestudy_batch.sh
+
+# === Allow-list: publish ONLY the three distilled artifacts under all_model_pdi/ ===
+# Sibling dirs (all_model/, all_model_observe_only/, ...) and everything else
+# under each all_model_pdi/<task>/ remain ignored. Only SKILL.md, attempts.json,
+# and trajectory.jsonl are white-listed.
+!spark_skills_gen/skills_gen_result/
+spark_skills_gen/skills_gen_result/*
+!spark_skills_gen/skills_gen_result/all_model_pdi/
+spark_skills_gen/skills_gen_result/all_model_pdi/*
+!spark_skills_gen/skills_gen_result/all_model_pdi/*/
+spark_skills_gen/skills_gen_result/all_model_pdi/*/*
+!spark_skills_gen/skills_gen_result/all_model_pdi/*/SKILL.md
+!spark_skills_gen/skills_gen_result/all_model_pdi/*/attempts.json
+!spark_skills_gen/skills_gen_result/all_model_pdi/*/trajectory.jsonl
