@@ -5,6 +5,19 @@
 > *Structured Pipelines for Autonomous Runnable tasKs and sKill generation*
 
 <p align="center">
+  <a href="https://etayang10th.github.io/spark.github.io/">
+    <img src="https://img.shields.io/badge/Blog-spark.github.io-1a56db?logo=github&logoColor=white" alt="SPARK blog"/>
+  </a>
+  <a href="https://github.com/EtaYang10th/spark-skills">
+    <img src="https://img.shields.io/badge/Code-GitHub-24292e?logo=github&logoColor=white" alt="SPARK code"/>
+  </a>
+</p>
+
+<p align="center">
+  🔗 <b>Project page / Blog:</b> <a href="https://etayang10th.github.io/spark.github.io/">https://etayang10th.github.io/spark.github.io/</a>
+</p>
+
+<p align="center">
   <img src="figure/pipeline_overview.png" alt="SPARK pipeline overview" width="880"/>
 </p>
 
