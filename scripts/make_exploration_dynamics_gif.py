@@ -80,16 +80,24 @@ Step	Exec	Plan	Oss	Raw	W	wPDI
 ]
 
 SERIES_STYLES = {
-    "exec": {"label": "Exec Grounding", "color": "#2ec4b6", "marker": "o", "linewidth": 1.9, "markersize": 4.8, "zorder": 4},
-    "plan": {"label": "Plan Stagnation", "color": "#ff6b6b", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
-    "oss":  {"label": "Ossification",   "color": "#f6bd16", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
-    "wpdi": {"label": "Weighted PDI",   "color": "#8b5cf6", "marker": "o", "linewidth": 2.4, "markersize": 5.2, "zorder": 5},
+    "exec": {"label": "Exec Grounding", "color": "#5eead4", "marker": "o", "linewidth": 1.9, "markersize": 4.8, "zorder": 4},
+    "plan": {"label": "Plan Stagnation", "color": "#fb7185", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
+    "oss":  {"label": "Ossification",   "color": "#fbbf24", "marker": "o", "linewidth": 1.8, "markersize": 4.6, "zorder": 3},
+    "wpdi": {"label": "Weighted PDI",   "color": "#c084fc", "marker": "o", "linewidth": 2.4, "markersize": 5.2, "zorder": 5},
 }
 TRIGGER_STYLES = {
-    "soft":   {"label": "Soft trigger",   "color": "#b5651d"},
-    "strong": {"label": "Strong trigger", "color": "#8c2f39"},
+    "soft":   {"label": "Soft trigger",   "color": "#fb923c"},
+    "strong": {"label": "Strong trigger", "color": "#f87171"},
 }
 PLOTTED_COLUMNS = ("exec", "plan", "oss", "wpdi")
+
+# Dark theme palette (distinct from the paper figure)
+BG_FIG   = "#0f172a"   # slate-900
+BG_AX    = "#111a2e"   # slightly lighter
+FG_TEXT  = "#e2e8f0"   # slate-200
+FG_MUTED = "#94a3b8"   # slate-400
+FG_GRID  = "#334155"   # slate-700
+ZERO_LN  = "#64748b"
 
 
 def configure_style() -> None:
@@ -97,6 +105,15 @@ def configure_style() -> None:
         {
             "figure.dpi": 140,
             "savefig.dpi": 140,
+            "figure.facecolor": BG_FIG,
+            "savefig.facecolor": BG_FIG,
+            "axes.facecolor": BG_AX,
+            "axes.edgecolor": FG_MUTED,
+            "axes.labelcolor": FG_TEXT,
+            "axes.titlecolor": FG_TEXT,
+            "xtick.color": FG_MUTED,
+            "ytick.color": FG_MUTED,
+            "text.color": FG_TEXT,
             "font.family": "serif",
             "font.serif": ["DejaVu Serif", "Times New Roman", "Times"],
             "mathtext.fontset": "stix",
@@ -177,26 +194,26 @@ def annotate_group_contrast(fig, left_ax, right_ax, left_label, right_label) -> 
 
     fig.add_artist(
         Line2D([center_x, center_x], [center_y - line_half, center_y + line_half],
-               transform=fig.transFigure, color="0.45", linestyle=(0, (3, 2)),
+               transform=fig.transFigure, color=FG_MUTED, linestyle=(0, (3, 2)),
                linewidth=1.35, zorder=2)
     )
-    fx = [pe.withStroke(linewidth=2.4, foreground="white", alpha=0.96)]
+    fx = [pe.withStroke(linewidth=2.4, foreground=BG_FIG, alpha=0.9)]
     fig.text(center_x - label_gap, label_y, left_label, ha="right", va="center",
              fontsize=7.8, fontweight="bold", fontstyle="italic",
-             color="#2f6f2f", path_effects=fx)
+             color="#86efac", path_effects=fx)
     fig.text(center_x + label_gap, label_y, right_label, ha="left", va="center",
              fontsize=7.8, fontweight="bold", fontstyle="italic",
-             color="#9c3d18", path_effects=fx)
+             color="#fca5a5", path_effects=fx)
     fig.add_artist(FancyArrowPatch(
         (center_x - 0.007, arrow_y), (center_x - arrow_span, arrow_y),
         transform=fig.transFigure,
         arrowstyle="Simple,tail_width=0.7,head_width=4.8,head_length=5.8",
-        mutation_scale=1, linewidth=0, color="#2f6f2f", shrinkA=0, shrinkB=0, alpha=0.96))
+        mutation_scale=1, linewidth=0, color="#86efac", shrinkA=0, shrinkB=0, alpha=0.96))
     fig.add_artist(FancyArrowPatch(
         (center_x + 0.007, arrow_y), (center_x + arrow_span, arrow_y),
         transform=fig.transFigure,
         arrowstyle="Simple,tail_width=0.7,head_width=4.8,head_length=5.8",
-        mutation_scale=1, linewidth=0, color="#9c3d18", shrinkA=0, shrinkB=0, alpha=0.96))
+        mutation_scale=1, linewidth=0, color="#fca5a5", shrinkA=0, shrinkB=0, alpha=0.96))
 
 
 def main() -> None:
@@ -216,8 +233,8 @@ def main() -> None:
     per_panel = []
     for ax, (task_name, group, rows) in zip(axes, parsed):
         steps = np.asarray([r["step"] for r in rows])
-        ax.axhline(0.0, color="0.35", linestyle=(0, (4, 2)), linewidth=1.25, zorder=1)
-        ax.grid(axis="y", linestyle=":", linewidth=0.65, alpha=0.28)
+        ax.axhline(0.0, color=ZERO_LN, linestyle=(0, (4, 2)), linewidth=1.25, zorder=1)
+        ax.grid(axis="y", linestyle=":", linewidth=0.65, color=FG_GRID, alpha=0.45)
         ax.set_axisbelow(True)
         ax.set_xlim(steps.min() - 0.25, steps.max() + 0.25)
         ax.set_ylim(*y_limits)
@@ -228,7 +245,7 @@ def main() -> None:
         # Task label chip (upper-left of panel)
         ax.text(0.018, 1.02, task_name, transform=ax.transAxes,
                 ha="left", va="bottom", fontsize=7.8, fontweight="semibold",
-                color="0.30")
+                color=FG_MUTED)
 
         # Animated line objects — one per series
         lines = {}
@@ -254,8 +271,8 @@ def main() -> None:
                 r["step"], top_y, st["label"].split()[0],
                 rotation=90, ha="center", va="top", fontsize=8.4,
                 fontweight="bold", color=st["color"],
-                bbox={"boxstyle": "round,pad=0.16", "facecolor": "white",
-                      "edgecolor": st["color"], "linewidth": 0.5, "alpha": 0.0},
+                bbox={"boxstyle": "round,pad=0.16", "facecolor": BG_AX,
+                      "edgecolor": st["color"], "linewidth": 0.7, "alpha": 0.0},
                 alpha=0.0,
             )
             triggers.append((r["step"], lvl, vl, chip))
@@ -298,9 +315,9 @@ def main() -> None:
         y0 = min(ax.get_position().y0 for ax in axes) - 0.02
         y1 = max(ax.get_position().y1 for ax in axes) + 0.01
         fig.add_artist(Line2D([split_x, split_x], [y0, y1],
-                              transform=fig.transFigure, color="0.55",
+                              transform=fig.transFigure, color=FG_MUTED,
                               linestyle=(0, (3, 3)), linewidth=1.1,
-                              alpha=0.9, zorder=1))
+                              alpha=0.65, zorder=1))
 
     # ----------------------------------------------------------------- animation
     def update(frame: int):
