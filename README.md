@@ -14,12 +14,17 @@
   <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">
     <img src="https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-SPARK__PDI__Trajectory-FFD21E?labelColor=1f1300" alt="Hugging Face Dataset"/>
   </a>
+  <a href="https://etayang10th.github.io/m3-bench.github.io/">
+    <img src="https://img.shields.io/badge/Sibling-M³--Bench-7c3aed?logo=github&logoColor=white" alt="M3-Bench blog"/>
+  </a>
 </p>
 
 <p align="center">
   🔗 <b>Project page / Blog:</b> <a href="https://etayang10th.github.io/spark.github.io/">https://etayang10th.github.io/spark.github.io/</a>
   <br/>
   🤗 <b>Dataset:</b> <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory</a>
+  <br/>
+  🧪 <b>Sibling project — M³-Bench:</b> <a href="https://etayang10th.github.io/m3-bench.github.io/">https://etayang10th.github.io/m3-bench.github.io/</a> · <a href="https://github.com/EtaYang10th/Open-M3-Bench">code</a> · <a href="https://arxiv.org/abs/2511.17729">arXiv 2511.17729</a>
 </p>
 
 <p align="center">
