@@ -5,6 +5,12 @@
 > *Structured Pipelines for Autonomous Runnable tasKs and sKill generation*
 
 <p align="center">
+  <a href="https://arxiv.org/abs/2605.09192">
+    <img src="https://img.shields.io/badge/arXiv-2605.09192-b31b1b.svg" alt="arXiv:2605.09192"/>
+  </a>
+  <a href="https://arxiv.org/pdf/2605.09192">
+    <img src="https://img.shields.io/badge/Paper-PDF-1a56db.svg" alt="Paper PDF"/>
+  </a>
   <a href="https://etayang10th.github.io/spark.github.io/">
     <img src="https://img.shields.io/badge/Blog-spark.github.io-1a56db?logo=github&logoColor=white" alt="SPARK blog"/>
   </a>
@@ -20,6 +26,8 @@
 </p>
 
 <p align="center">
+  <b>Paper:</b> <a href="https://arxiv.org/abs/2605.09192">arXiv:2605.09192</a> · <a href="https://arxiv.org/pdf/2605.09192">PDF</a>
+  <br/>
   🔗 <b>Project page / Blog:</b> <a href="https://etayang10th.github.io/spark.github.io/">https://etayang10th.github.io/spark.github.io/</a>
   <br/>
   🤗 <b>Dataset:</b> <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory</a>
@@ -278,11 +286,15 @@ Local convenience wrappers (they assume a `conda` env named `spark`):
 If SPARK or PDI helps your research, please cite:
 
 ```bibtex
-@misc{spark2026,
-  title  = {Evidence Over Plans: Online Trajectory Verification for Skill Distillation},
-  author = {Zhou, Yang and Dong, Zihan and Wang, Zhenting and Jin, Can and
-            Zhao, Shiyu and Guo, Bangwei and Gu, Difei and Zhang, Linjun and
-            Zhou, Mu and Metaxas, Dimitris N.},
-  year   = {2026}
+@misc{zhou2026spark,
+  title         = {Evidence Over Plans: Online Trajectory Verification for Skill Distillation},
+  author        = {Zhou, Yang and Dong, Zihan and Wang, Zhenting and Jin, Can and
+                   Zhao, Shiyu and Guo, Bangwei and Gu, Difei and Zhang, Linjun and
+                   Zhou, Mu and Metaxas, Dimitris N.},
+  year          = {2026},
+  eprint        = {2605.09192},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2605.09192}
 }
 ```
