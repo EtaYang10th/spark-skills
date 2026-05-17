@@ -108,10 +108,14 @@ MIT License (same as the SPARK codebase).
 
 ```bibtex
 @misc{zhou2026spark,
-  title  = {Evidence Over Plans: Online Trajectory Verification for Skill Distillation},
-  author = {Zhou, Yang and Dong, Zihan and Wang, Zhenting and Jin, Can and
-            Zhao, Shiyu and Guo, Bangwei and Gu, Difei and
-            Zhang, Linjun and Zhou, Mu and Metaxas, Dimitris N.},
-  year   = {2026}
+  title         = {Evidence Over Plans: Online Trajectory Verification for Skill Distillation},
+  author        = {Zhou, Yang and Dong, Zihan and Wang, Zhenting and Jin, Can and
+                   Zhao, Shiyu and Guo, Bangwei and Gu, Difei and
+                   Zhang, Linjun and Zhou, Mu and Metaxas, Dimitris N.},
+  year          = {2026},
+  eprint        = {2605.09192},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.AI},
+  url           = {https://arxiv.org/abs/2605.09192}
 }
 ```
