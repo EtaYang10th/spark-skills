@@ -23,6 +23,9 @@
   <a href="https://etayang10th.github.io/m3-bench.github.io/">
     <img src="https://img.shields.io/badge/Sibling-M³--Bench-7c3aed?logo=github&logoColor=white" alt="M3-Bench blog"/>
   </a>
+  <a href="https://arxiv.org/abs/2606.11435">
+    <img src="https://img.shields.io/badge/Survey-Skill%20Eval%20%26%20Evolution-0aa?logo=arxiv&logoColor=white" alt="Skill Evaluation and Evolution survey"/>
+  </a>
 </p>
 
 <p align="center">
@@ -33,6 +36,8 @@
   🤗 <b>Dataset:</b> <a href="https://huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory">huggingface.co/datasets/EtaYang10th/SPARK_PDI_Trajectory</a>
   <br/>
   🧪 <b>Sibling project — M³-Bench:</b> <a href="https://etayang10th.github.io/m3-bench.github.io/">https://etayang10th.github.io/m3-bench.github.io/</a> · <a href="https://github.com/EtaYang10th/Open-M3-Bench">code</a> · <a href="https://arxiv.org/abs/2511.17729">arXiv 2511.17729</a>
+  <br/>
+  📚 <b>Related survey:</b> <a href="https://arxiv.org/abs/2606.11435">Agent Skill Evaluation and Evolution: Frameworks and Benchmarks</a> · <a href="https://arxiv.org/abs/2606.11435">arXiv 2606.11435</a>
 </p>
 
 <p align="center">
@@ -281,6 +286,18 @@ Local convenience wrappers (they assume a `conda` env named `spark`):
 
 ---
 
+## Related work
+
+SPARK focuses on the *creation* end of the skill lifecycle — distilling execution-verified trajectories into reusable `SKILL.md` artifacts. For a broader picture of what comes *after* creation — how skills are evaluated, compressed, and continually improved — see our survey:
+
+> **Agent Skill Evaluation and Evolution: Frameworks and Benchmarks.**
+> Kexin Ding, Yang Zhou, Can Jin, Feng Tong, Mu Zhou, Dimitris N. Metaxas. arXiv:2606.11435, 2026.
+> [arXiv](https://arxiv.org/abs/2606.11435) · [PDF](https://arxiv.org/pdf/2606.11435)
+
+The survey organizes skill **evolution** into four paradigms — execution feedback, trajectory distillation, compression, and reinforcement learning — and analyzes six categories of skill-centric benchmarks. SPARK's PDI-guided, evidence-over-plans distillation sits squarely in the *execution feedback* and *trajectory distillation* paradigms it describes.
+
+---
+
 ## Citation
 
 If SPARK or PDI helps your research, please cite:
@@ -296,5 +313,20 @@ If SPARK or PDI helps your research, please cite:
   archivePrefix = {arXiv},
   primaryClass  = {cs.AI},
   url           = {https://arxiv.org/abs/2605.09192}
+}
+```
+
+You may also cite the companion survey on skill evaluation and evolution:
+
+```bibtex
+@misc{ding2026skillsurvey,
+  title         = {Agent Skill Evaluation and Evolution: Frameworks and Benchmarks},
+  author        = {Ding, Kexin and Zhou, Yang and Jin, Can and Tong, Feng and
+                   Zhou, Mu and Metaxas, Dimitris N.},
+  year          = {2026},
+  eprint        = {2606.11435},
+  archivePrefix = {arXiv},
+  primaryClass  = {cs.CL},
+  url           = {https://arxiv.org/abs/2606.11435}
 }
 ```
